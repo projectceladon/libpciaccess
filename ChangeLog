@@ -1,0 +1,32 @@
+2006-03-17  Ian D. Romanick  <idr@us.ibm.com>
+
+	* configure.ac, src/common_device_name.c
+	Added configure option (--with-pciids-path) to set the default
+	place to look for the pci.ids file.
+
+2006-03-16  Ian D. Romanick  <idr@us.ibm.com>
+
+	* src/pcils.c, src/scanpci.c, src/Makefile.foo
+	Made pcils more like XFree86's scanpci utility than lspci.  Changed
+	the name of the source file from pcils.c to scanpci.c.  Eventually
+	this will be it's own project somewhere else (or it will whither and
+	die).
+
+2006-03-15  Ian D. Romanick  <idr@us.ibm.com>
+
+	* First round of autotools madness.
+
+2006-02-24  Ian D. Romanick  <idr@us.ibm.com>
+
+	* common_device_name.c, pciaccess.h, pcils.c:
+	Add interfaces for querying the device, vendor, subdevice, and
+	subvendor name strings from pci.ids.
+
+2006-02-20  Ian D. Romanick  <idr@us.ibm.com>
+
+	* common_agp.c:
+	Removed this file.  It was an old version of what became
+	common_capability.c.
+
+	* common_capability.c:
+	Fixed an issue with AGP rate detection for AGP3 devices.

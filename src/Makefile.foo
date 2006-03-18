@@ -1,0 +1,26 @@
+SOURCES = common_iterator.c \
+	common_init.c \
+	common_interface.c \
+	common_capability.c \
+	common_device_name.c \
+	linux_sysfs.c
+
+OBJECTS = $(SOURCES:.c=.o)
+
+CFLAGS = -ggdb3 -Wall -O0 -I$(VPATH)../include
+
+.PHONY: docs
+
+scanpci: scanpci.o
+	$(CC) $(CFLAGS) $(LDFLAGS) scanpci.o -o scanpci -L.libs -lpciaccess
+
+scanpci.o : scanpci.c ../include/pciaccess.h
+
+$(OBJECTS) : pciaccess.h pciaccess_private.h
+
+docs:
+	doxygen Doxyfile | grep Warning: ; echo
+
+clean:
+	rm -f $(OBJECTS) libpciaccess.a *~
+	rm -f scanpci scanpci.o
