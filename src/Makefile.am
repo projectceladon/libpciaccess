@@ -40,3 +40,7 @@ libpciaccessincludedir = $(includedir)
 libpciaccessinclude_HEADERS = \
     $(top_srcdir)/include/pciaccess.h
 
+noinst_PROGRAMS = scanpci
+
+scanpci_SOURCES = scanpci.c
+scanpci_LDADD = libpciaccess.la
