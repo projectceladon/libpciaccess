@@ -1,3 +1,7 @@
+2006-03-24  Ian D. Romanick  <idr@us.ibm.com>
+
+	* src/Makefile.foo: Drop from CVS.
+
 2006-03-20  Kristian Høgsberg  <krh@redhat.com>
 
 	* src/Makefile.am (noinst_PROGRAMS): Add scanpci as a noinst target.
