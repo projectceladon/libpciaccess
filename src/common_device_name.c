@@ -335,10 +335,35 @@ find_vendor_name( const struct pci_id_match * m )
 /**
  * Get a name based on an arbitrary PCI search structure.
  */
-const char *
-pci_get_name( const struct pci_id_match * m )
+void
+pci_get_strings( const struct pci_id_match * m,
+		 const char ** device_name,
+		 const char ** vendor_name,
+		 const char ** subdevice_name,
+		 const char ** subvendor_name )
 {
-    return find_device_name( m );
+    struct pci_id_match  temp;
+    
+    
+    temp = *m;
+    temp.subvendor_id = PCI_MATCH_ANY;
+    temp.subdevice_id = PCI_MATCH_ANY;
+
+    if ( device_name != NULL ) {
+	*device_name = find_device_name( & temp );
+    }
+
+    if ( vendor_name != NULL ) {
+	*vendor_name = find_vendor_name( & temp );
+    }
+
+    if ( subdevice_name != NULL ) {
+	*subdevice_name = find_device_name( m );
+    }
+
+    if ( subvendor_name != NULL ) {
+	*subvendor_name = find_vendor_name( m );
+    }
 }
 
 

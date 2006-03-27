@@ -57,6 +57,9 @@ void pci_iterator_destroy( struct pci_device_iterator * iter );
 
 struct pci_device * pci_device_next( struct pci_device_iterator * iter );
 
+void pci_get_strings( const struct pci_id_match * m,
+    const char ** device_name, const char ** vendor_name,
+    const char ** subdevice_name, const char ** subvendor_name );
 const char * pci_get_name( const struct pci_id_match * m );
 const char * pci_device_get_device_name( const struct pci_device * dev );
 const char * pci_device_get_subdevice_name( const struct pci_device * dev );

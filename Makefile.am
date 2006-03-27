@@ -26,5 +26,4 @@ SUBDIRS = src
 pkgconfigdir = $(libdir)/pkgconfig
 pkgconfig_DATA = pciaccess.pc
 
-EXTRA_DIST = pciaccess.pc.in autogen.sh src/pcils.c src/Makefile.foo
-
+EXTRA_DIST = pciaccess.pc.in autogen.sh src/scanpci.c
