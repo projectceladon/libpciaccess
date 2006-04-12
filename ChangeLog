@@ -1,3 +1,37 @@
+2006-04-12  Ian Romanick  <idr@us.ibm.com>
+
+	* configure.ac:
+	* src/Makefile.am:
+	Bump to version 0.4.0.
+
+	* include/pciaccess.h:
+	Add multiple-inclusion protection.
+
+	* src/common_interface.c: (pci_device_cfg_write_bits):
+	Add new function to write masked bits to PCI config space.
+	This mirrors functionality currently available in X.org that is slated
+	to be removed.
+
+	* src/common_iterator.c: (pci_slot_match_iterator_create),
+	(pci_id_match_iterator_create), (pci_iterator_destroy),
+	(pci_device_next), (pci_device_find_by_slot):
+	Gut old regex based search mechanism with a new mechanism that is
+	modeled after the Linux kernel.  In addition to searching for
+	devices by device / vendor ID, it is possible to search for devices
+	by their domain / bus / slot / function.
+
+	* src/linux_sysfs.c: (pci_device_linux_sysfs_read_rom),
+	(pci_device_linux_sysfs_map_region),
+	(pci_device_linux_sysfs_unmap_region):
+	Fix serious bus in the reading of ROMs and in the unmapping of
+	regions.  The main point is that the map routine depens on the
+	pci_mem_region::memory pointer being non-NULL only when the region
+	is mapped.  Therefore, the unmap routine should set it to NULL after
+	unmapping.
+
+	* src/scanpci.c: (main):
+	Update to use new search API.
+
 2006-03-27  Ian Romanick  <idr@us.ibm.com>
 
 	* Makefile.am:

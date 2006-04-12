@@ -147,7 +147,7 @@ int main( int argc, char ** argv )
 
     pci_system_init();
 
-    iter = pci_iterator_create( (argc > 1) ? argv[1] : NULL );
+    iter = pci_slot_match_iterator_create( NULL );
 
     while ( (dev = pci_device_next( iter )) != NULL ) {
 	pci_device_probe( dev );

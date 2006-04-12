@@ -343,3 +343,22 @@ pci_device_cfg_write_u32( struct pci_device * dev, const uint32_t * data,
 
     return err;
 }
+
+
+int
+pci_device_cfg_write_bits( struct pci_device * dev, uint32_t mask, 
+			   uint32_t data, pciaddr_t offset )
+{
+    uint32_t  temp;
+    int err;
+
+    err = pci_device_cfg_read_u32( dev, & temp, offset );
+    if ( ! err ) {
+	temp &= ~mask;
+	temp |= data;
+
+	err = pci_device_cfg_write_u32( dev, & temp, offset );
+    }
+
+    return err;
+}

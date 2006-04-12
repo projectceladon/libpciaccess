@@ -30,9 +30,7 @@
  */
 
 #include <stdlib.h>
-#include <stdio.h>
 #include <string.h>
-#include <regex.h>
 
 #include "pciaccess.h"
 #include "pciaccess_private.h"
@@ -44,42 +42,31 @@
  */
 struct pci_device_iterator {
     unsigned next_index;
-    regex_t   reg;
-    int no_regex;
-};
 
+    enum {
+	match_any,
+	match_slot,
+	match_id
+    } mode;
+
+    union {
+	struct pci_slot_match   slot;
+	struct pci_id_match     id;
+    } match;
+};
 
 
 /**
  * Create an iterator based on a regular expression.
- * 
- * The set of devices to be iterated is selected by the regular expression
- * passed in \c regex.  The expression matches against an extended PCI bus
- * identifier string. The format of this string is
- * "domain:bus:slot.function:vendor:device_id:subvendor:subdevice_id:class".
- * Unlike classic X bus IDs, all values in the extened bus identifier string
- * are in hexadecimal.  To simplify the required regular expressions, all hex
- * digits greater than 9 will be lower-case. 
  *
- * To match all devices in domain 0, the expression "0:.+" would be used.  To
- * match all devices by ATI, the expression ".+:1002:.+". To match all devices
- * with a class of display, a class of multimedia and a subclass of video, or
- * a class of processor and a subclass of coprocessor, the expression
- * ".+:(03[[:hex:]]2|0400|0b40|0001)$" would be used.  Since this is a fully
- * function regular expression, arbitrarilly complex matches can be requested.
- * 
- * \param pci_sys  Handle for the PCI subsystem.
- * \param regex    Pointer to the regular expression to match against.  If
- *                 \c NULL is passed, all devices will be matched.
- * 
  * \return
  * A pointer to a fully initialized \c pci_device_iterator structure on
  * success, or \c NULL on failure.
- * 
- * \sa pci_device_next, pci_iterator_destroy
+ *
+ * \sa pci_id_match_iterator_create, pci_device_next, pci_iterator_destroy
  */
 struct pci_device_iterator *
-pci_iterator_create( const char * re )
+pci_slot_match_iterator_create( const struct pci_slot_match * match )
 {
     struct pci_device_iterator * iter;
     
@@ -91,21 +78,49 @@ pci_iterator_create( const char * re )
     if ( iter != NULL ) {
 	iter->next_index = 0;
 
-	/* If the caller passed a NULL or empty expression, then we don't try
-	 * to compile the expression.  Instead we set a flag that tells the
-	 * iterator routine to iterate every device in the list.
-	 */
-	if ( (re != NULL) && (strlen( re ) > 0) ) {
-	    int err = regcomp( & iter->reg, re, REG_EXTENDED | REG_NOSUB );
-	    if ( err != 0 ) {
-		free( iter );
-		iter = NULL;
-	    }
+	if ( match != NULL ) {
+	    iter->mode = match_slot;
 
-	    iter->no_regex = 0;
+	    (void) memcpy( & iter->match.slot, match, sizeof( *match ) );
 	}
 	else {
-	    iter->no_regex = 1;
+	    iter->mode = match_any;
+	}
+    }
+
+    return iter;
+}
+
+
+/**
+ * Create an iterator based on a regular expression.
+ *
+ * \return
+ * A pointer to a fully initialized \c pci_device_iterator structure on
+ * success, or \c NULL on failure.
+ *
+ * \sa pci_slot_match_iterator_create, pci_device_next, pci_iterator_destroy
+ */
+struct pci_device_iterator *
+pci_id_match_iterator_create( const struct pci_id_match * match )
+{
+    struct pci_device_iterator * iter;
+    
+    if ( pci_sys == NULL ) {
+	return NULL;
+    }
+
+    iter = malloc( sizeof( *iter ) );
+    if ( iter != NULL ) {
+	iter->next_index = 0;
+
+	if ( match != NULL ) {
+	    iter->mode = match_id;
+
+	    (void) memcpy( & iter->match.id, match, sizeof( *match ) );
+	}
+	else {
+	    iter->mode = match_any;
 	}
     }
 
@@ -124,36 +139,7 @@ void
 pci_iterator_destroy( struct pci_device_iterator * iter )
 {
     if ( iter != NULL ) {
-	if ( ! iter->no_regex ) {
-	    regfree( & iter->reg );
-	}
-
 	free( iter );
-    }
-}
-
-
-static void
-fill_device_string( struct pci_device_private * d )
-{
-
-    if ( d->device_string == NULL ) {
-	char * const string = malloc( 40 );
-	if ( string != NULL ) {
-	    pci_device_probe( (struct pci_device *) d );
-	    sprintf( string, "%04x:%02x:%02x.%u:%04x:%04x:%04x:%04x:%06x",
-		     d->base.domain,
-		     d->base.bus,
-		     d->base.dev,
-		     d->base.func,
-		     d->base.vendor_id,
-		     d->base.device_id,
-		     d->base.subvendor_id,
-		     d->base.subdevice_id,
-		     d->base.device_class );
-
-	    d->device_string = string;
-	}
     }
 }
 
@@ -166,45 +152,77 @@ fill_device_string( struct pci_device_private * d )
  * \return
  * A pointer to a \c pci_device, or \c NULL when all devices have been
  * iterated.
- *
- * \bug
- * The only time this routine should be able to return \c NULL is when the
- * end of the list is hit.  However, there is a memory allocation (via
- * \c fill_device_string) that can fail.  If this allocation fails, \c NULL
- * will be erroneously returned.  What should be done here?  Pre-fill the
- * device strings in \c pci_iterator_create?
  */
 struct pci_device *
 pci_device_next( struct pci_device_iterator * iter )
 {
     struct pci_device_private * d = NULL;
 
-    if ( iter->no_regex ) {
+    switch( iter->mode ) {
+    case match_any:
 	if ( iter->next_index < pci_sys->num_devices ) {
 	    d = & pci_sys->devices[ iter->next_index ];
 	    iter->next_index++;
 	}
-    }
-    else {
+
+	break;
+
+    case match_slot: {
 	while ( iter->next_index < pci_sys->num_devices ) {
 	    struct pci_device_private * const temp = 
 	      & pci_sys->devices[ iter->next_index ];
 
-	    if ( temp->device_string == NULL ) {
-		fill_device_string( temp );		
-		if ( temp->device_string == NULL ) {
-		    break;
-		}
-	    }
-
 	    iter->next_index++;
-
-	    if ( regexec( & iter->reg, temp->device_string, 0, NULL, 0 ) == 0 ) {
+	    if ( PCI_ID_COMPARE( iter->match.slot.domain, temp->base.domain )
+		 && PCI_ID_COMPARE( iter->match.slot.bus, temp->base.bus )
+		 && PCI_ID_COMPARE( iter->match.slot.dev, temp->base.dev )
+		 && PCI_ID_COMPARE( iter->match.slot.func, temp->base.func ) ) {
 		d = temp;
 		break;
 	    }
 	}
+	
+	break;
     }
-    
+
+    case match_id: {
+	while ( iter->next_index < pci_sys->num_devices ) {
+	    struct pci_device_private * const temp = 
+	      & pci_sys->devices[ iter->next_index ];
+
+	    iter->next_index++;
+	    if ( PCI_ID_COMPARE( iter->match.id.vendor_id, temp->base.vendor_id )
+		 && PCI_ID_COMPARE( iter->match.id.device_id, temp->base.device_id )
+		 && PCI_ID_COMPARE( iter->match.id.subvendor_id, temp->base.subvendor_id )
+		 && PCI_ID_COMPARE( iter->match.id.subdevice_id, temp->base.subdevice_id )
+		 && ((temp->base.device_class & iter->match.id.device_class_mask) 
+		     == iter->match.id.device_class) ) {
+		d = temp;
+		break;
+	    }
+	}
+	
+	break;
+    }
+    }
+
     return (struct pci_device *) d;
+}
+
+
+struct pci_device *
+pci_device_find_by_slot( uint32_t domain, uint32_t bus, uint32_t dev,
+			 uint32_t func )
+{
+    struct pci_device_iterator  iter;
+    
+    
+    iter.next_index = 0;
+    iter.mode = match_slot;
+    iter.match.slot.domain = domain;
+    iter.match.slot.bus = bus;
+    iter.match.slot.dev = dev;
+    iter.match.slot.func = func;
+
+    return pci_device_next( & iter );
 }

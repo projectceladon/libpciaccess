@@ -28,6 +28,9 @@
  * \author Ian Romanick <idr@us.ibm.com>
  */
 
+#ifndef PCIACCESS_H
+#define PCIACCESS_H
+
 #include <inttypes.h>
 
 typedef uint64_t pciaddr_t;
@@ -35,6 +38,7 @@ typedef uint64_t pciaddr_t;
 struct pci_device;
 struct pci_device_iterator;
 struct pci_id_match;
+struct pci_slot_match;
 
 int pci_device_read_rom( struct pci_device * dev, void * buffer );
 
@@ -51,16 +55,22 @@ int pci_system_init( void );
 
 void pci_system_cleanup( void );
 
-struct pci_device_iterator * pci_iterator_create( const char *regex );
+struct pci_device_iterator * pci_slot_match_iterator_create(
+    const struct pci_slot_match * match );
+
+struct pci_device_iterator * pci_id_match_iterator_create(
+    const struct pci_id_match * match );
 
 void pci_iterator_destroy( struct pci_device_iterator * iter );
 
 struct pci_device * pci_device_next( struct pci_device_iterator * iter );
 
+struct pci_device * pci_device_find_by_slot( uint32_t domain, uint32_t bus,
+    uint32_t dev, uint32_t func );
+
 void pci_get_strings( const struct pci_id_match * m,
     const char ** device_name, const char ** vendor_name,
     const char ** subdevice_name, const char ** subvendor_name );
-const char * pci_get_name( const struct pci_id_match * m );
 const char * pci_device_get_device_name( const struct pci_device * dev );
 const char * pci_device_get_subdevice_name( const struct pci_device * dev );
 const char * pci_device_get_vendor_name( const struct pci_device * dev );
@@ -83,9 +93,18 @@ int pci_device_cfg_write_u16( struct pci_device * dev, const uint16_t * data,
     pciaddr_t offset );
 int pci_device_cfg_write_u32( struct pci_device * dev, const uint32_t * data,
     pciaddr_t offset );
-
+int pci_device_cfg_write_bits( struct pci_device * dev, uint32_t mask,
+    uint32_t data, pciaddr_t offset );
 
 #define PCI_MATCH_ANY  (~0)
+
+/**
+ * Compare two PCI ID values (either vendor or device).  This is used
+ * internally to compare the fields of \c pci_id_match to the fields of
+ * \c pci_device.
+ */
+#define PCI_ID_COMPARE(a, b) \
+    (((a) == PCI_MATCH_ANY) || ((a) == (b)))
 
 /**
  */
@@ -117,6 +136,26 @@ struct pci_id_match {
     intptr_t    match_data;
 };
 
+
+/**
+ */
+struct pci_slot_match {
+    /**
+     * \name Device slot matching controls
+     *
+     * Control the search based on the domain, bus, slot, and function of
+     * the device.  Setting any of these fields to \c PCI_MATCH_ANY will cause
+     * the field to not be used in the comparison.
+     */
+    /*@{*/
+    uint32_t    domain;
+    uint32_t    bus;
+    uint32_t    dev;
+    uint32_t    func;
+    /*@}*/
+
+    intptr_t    match_data;
+};
 
 /**
  * BAR descriptor for a PCI device.
@@ -195,7 +234,9 @@ struct pci_device {
     /*@}*/
 
     /**
-     * Device's class and subclass packed into a single 32-bit value.
+     * Device's class, subclass, and programming interface packed into a
+     * single 32-bit value.  The class is at bits [23:16], subclass is at
+     * bits [15:8], and programming interface is at [7:0].
      */
     uint32_t    device_class;
 
@@ -231,7 +272,7 @@ struct pci_device {
      * It is the user's responsability to free this memory before destroying
      * the \c pci_device structure.
      */
-    void * user_data;
+    intptr_t user_data;
 };
 
 
@@ -276,3 +317,5 @@ struct pci_agp_info {
     uint8_t    calibration_cycle_timing;
     uint8_t    max_requests;
 };
+
+#endif /* PCIACCESS_H */

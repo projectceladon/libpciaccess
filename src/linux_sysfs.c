@@ -259,6 +259,7 @@ pci_device_linux_sysfs_read_rom( struct pci_device * dev, void * buffer )
     int fd;
     struct stat  st;
     int err = 0;
+    size_t total_bytes;
 
 
     snprintf( name, 255, "%s/%04x:%02x:%02x.%1u/rom",
@@ -288,9 +289,20 @@ pci_device_linux_sysfs_read_rom( struct pci_device * dev, void * buffer )
     write( fd, "1", 1 );
     lseek( fd, 0, SEEK_SET );
 
-    if ( read( fd, buffer, st.st_size ) == -1 ) {
-	err = errno;
+    for ( total_bytes = 0 ; total_bytes < st.st_size ; /* empty */ ) {
+	const int bytes = read( fd, (char *) buffer + total_bytes,
+				st.st_size - total_bytes );
+	if ( bytes == -1 ) {
+	    err = errno;
+	    break;
+	}
+	else if ( bytes == 0 ) {
+	    break;
+	}
+
+	total_bytes += bytes;
     }
+	
 
     lseek( fd, 0, SEEK_SET );
     write( fd, "0", 1 );
@@ -440,7 +452,7 @@ pci_device_linux_sysfs_map_region( struct pci_device * dev, unsigned region,
     char name[256];
     int fd;
     int err = 0;
-    int prot = (write_enable) ? (PROT_READ | PROT_WRITE) : PROT_READ;
+    const int prot = (write_enable) ? (PROT_READ | PROT_WRITE) : PROT_READ;
 
 
     snprintf( name, 255, "%s/%04x:%02x:%02x.%1u/resource%u",
@@ -488,6 +500,14 @@ pci_device_linux_sysfs_map_region( struct pci_device * dev, unsigned region,
 static int
 pci_device_linux_sysfs_unmap_region( struct pci_device * dev, unsigned region )
 {
-    return munmap( dev->regions[ region ].memory,
-		   dev->regions[ region ].size );
+    int err = 0;
+
+    if ( munmap( dev->regions[ region ].memory, dev->regions[ region ].size )
+	 == -1 ) {
+	err = errno;
+    }
+
+    dev->regions[ region ].memory = NULL;
+
+    return err;
 }
