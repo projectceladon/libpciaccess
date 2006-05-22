@@ -1,3 +1,11 @@
+2006-05-09  Ian Romanick  <idr@us.ibm.com>
+
+	* src/linux_sysfs.c: (pci_device_linux_sysfs_probe):
+	Fix foolish endianess bug.
+
+	* src/Makefile.am:
+	Bump to version 0.4.1.
+
 2006-04-12  Ian Romanick  <idr@us.ibm.com>
 
 	* configure.ac:
@@ -23,7 +31,7 @@
 	* src/linux_sysfs.c: (pci_device_linux_sysfs_read_rom),
 	(pci_device_linux_sysfs_map_region),
 	(pci_device_linux_sysfs_unmap_region):
-	Fix serious bus in the reading of ROMs and in the unmapping of
+	Fix serious bugs in the reading of ROMs and in the unmapping of
 	regions.  The main point is that the map routine depens on the
 	pci_mem_region::memory pointer being non-NULL only when the region
 	is mapped.  Therefore, the unmap routine should set it to NULL after

@@ -179,12 +179,13 @@ pci_device_linux_sysfs_probe( struct pci_device * dev )
 
     err = pci_device_linux_sysfs_read( dev, config, 0, 256, & bytes );
     if ( bytes >= 64 ) {
-	dev->vendor_id = ((uint16_t *) config)[0];
-	dev->device_id = ((uint16_t *) config)[1];
-	dev->device_class = (((uint32_t *) config)[2]) >> 8;
+	dev->vendor_id = (uint16_t)config[0] + ((uint16_t)config[1] << 8);
+	dev->device_id = (uint16_t)config[2] + ((uint16_t)config[3] << 8);
+	dev->device_class = (uint32_t)config[11] + ((uint32_t)config[10] << 8)
+	  + ((uint16_t)config[9] << 16);
 	dev->revision = config[8];
-	dev->subvendor_id = ((uint16_t *) config)[22];
-	dev->subdevice_id = ((uint16_t *) config)[23];
+	dev->subvendor_id = (uint16_t)config[44] + ((uint16_t)config[45] << 8);
+	dev->subdevice_id = (uint16_t)config[46] + ((uint16_t)config[47] << 8);
 	dev->irq = config[60];
 
 
