@@ -51,6 +51,12 @@ int pci_device_probe( struct pci_device * dev );
 
 const struct pci_agp_info * pci_device_get_agp_info( struct pci_device * dev );
 
+const struct pci_bridge_info * pci_device_get_bridge_info(
+    struct pci_device * dev );
+
+const struct pci_pcmcia_bridge_info * pci_device_get_pcmcia_bridge_info(
+    struct pci_device * dev );
+
 int pci_system_init( void );
 
 void pci_system_cleanup( void );
@@ -316,6 +322,60 @@ struct pci_agp_info {
     uint8_t    async_req_size;
     uint8_t    calibration_cycle_timing;
     uint8_t    max_requests;
+};
+
+/**
+ * Description of a PCI-to-PCI bridge device.
+ * 
+ * \sa pci_device_get_bridge_info
+ */
+struct pci_bridge_info {
+    uint8_t    primary_bus;
+    uint8_t    secondary_bus;
+    uint8_t    subordinate_bus;
+    uint8_t    secondary_latency_timer;
+
+    uint8_t     io_type;
+    uint8_t     mem_type;
+    uint8_t     prefetch_mem_type;
+
+    uint16_t    secondary_status;
+    uint16_t    bridge_control;
+
+    uint32_t    io_base;
+    uint32_t    io_limit;
+
+    uint32_t    mem_base;
+    uint32_t    mem_limit;
+
+    uint64_t    prefetch_mem_base;
+    uint64_t    prefetch_mem_limit;
+};
+
+/**
+ * Description of a PCI-to-PCMCIA bridge device.
+ * 
+ * \sa pci_device_get_pcmcia_bridge_info
+ */
+struct pci_pcmcia_bridge_info {
+    uint8_t    primary_bus;
+    uint8_t    card_bus;
+    uint8_t    subordinate_bus;
+    uint8_t    cardbus_latency_timer;
+    
+    uint16_t    secondary_status;
+    uint16_t    bridge_control;
+
+    struct {
+	uint32_t    base;
+	uint32_t    limit;
+    } io[2];
+
+    struct {
+	uint32_t    base;
+	uint32_t    limit;
+    } mem[2];
+
 };
 
 #endif /* PCIACCESS_H */

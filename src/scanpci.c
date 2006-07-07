@@ -28,6 +28,26 @@
 #include "pciaccess.h"
 
 
+static void
+print_pci_bridge( const struct pci_bridge_info * info )
+{
+    printf( "  Bus: primary=%02x, secondary=%02x, subordinate=%02x, "
+	    "sec-latency=%u\n",
+	    info->primary_bus,
+	    info->secondary_bus,
+	    info->subordinate_bus,
+	    info->secondary_latency_timer );
+    printf( "  I/O behind bridge: %08x-%08x\n",
+	    info->io_base,
+	    info->io_limit );
+    printf( "  Memory behind bridge: %08x-%08x\n",
+	    info->mem_base,
+	    info->mem_limit );
+    printf( "  Prefetchable memory behind bridge: %08llx-%08llx\n",
+	    info->prefetch_mem_base,
+	    info->prefetch_mem_limit );
+}
+
 void
 print_pci_device( struct pci_device * dev, int verbose )
 {
@@ -136,6 +156,17 @@ print_pci_device( struct pci_device * dev, int verbose )
 		min_grant,
 		int_pin,
 		dev->irq );
+
+	if ( (dev->device_class >> 16) == 0x06 ) {
+	    const void * info;
+
+	    if ( (info = pci_device_get_bridge_info(dev)) != NULL ) {
+		print_pci_bridge( (const struct pci_bridge_info *) info );
+	    }
+	    else if ( (info = pci_device_get_pcmcia_bridge_info(dev)) != NULL ) {
+		/* Nothing yet. */
+	    }
+	}
     }
 }
 

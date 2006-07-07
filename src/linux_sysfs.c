@@ -179,6 +179,8 @@ pci_device_linux_sysfs_probe( struct pci_device * dev )
 
     err = pci_device_linux_sysfs_read( dev, config, 0, 256, & bytes );
     if ( bytes >= 64 ) {
+	struct pci_device_private *priv = (struct pci_device_private *) dev;
+
 	dev->vendor_id = (uint16_t)config[0] + ((uint16_t)config[1] << 8);
 	dev->device_id = (uint16_t)config[2] + ((uint16_t)config[3] << 8);
 	dev->device_class = (uint32_t)config[9] + ((uint32_t)config[10] << 8)
@@ -187,6 +189,8 @@ pci_device_linux_sysfs_probe( struct pci_device * dev )
 	dev->subvendor_id = (uint16_t)config[44] + ((uint16_t)config[45] << 8);
 	dev->subdevice_id = (uint16_t)config[46] + ((uint16_t)config[47] << 8);
 	dev->irq = config[60];
+
+	priv->header_type = config[14];
 
 
 	/* The PCI config registers can be used to obtain information
