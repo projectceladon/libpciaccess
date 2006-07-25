@@ -33,6 +33,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <ctype.h>
+#include <errno.h>
 
 #if defined(HAVE_STRING_H)
 # include <string.h>
@@ -210,4 +211,55 @@ pci_device_get_pcmcia_bridge_info( struct pci_device * dev )
     }
 
     return (priv->header_type == 2) ? priv->bridge.pcmcia : NULL;
+}
+
+
+int
+pci_device_get_bridge_buses(struct pci_device * dev, int *primary_bus,
+			    int *secondary_bus, int *subordinate_bus)
+{
+    struct pci_device_private * priv = (struct pci_device_private *) dev;
+
+    /* If the device isn't a bridge, return an error.
+     */
+    
+    if (((dev->device_class >> 16) & 0x0ff) != 0x06) {
+	return ENODEV;
+    }
+
+    if (priv->bridge.pci == NULL) {
+	read_bridge_info(priv);
+    }
+
+    switch ((dev->device_class >> 8) & 0x0ff) {
+    case 0x00:
+	/* What to do for host bridges?  I'm pretty sure this isn't right.
+	 */
+	*primary_bus = dev->bus;
+	*secondary_bus = -1;
+	*subordinate_bus = -1;
+	break;
+
+    case 0x01:
+    case 0x02:
+    case 0x03:
+	*primary_bus = dev->bus;
+	*secondary_bus = -1;
+	*subordinate_bus = -1;
+	break;
+
+    case 0x04:
+	*primary_bus = priv->bridge.pci->primary_bus;
+	*secondary_bus = priv->bridge.pci->secondary_bus;
+	*subordinate_bus = priv->bridge.pci->subordinate_bus;
+	break;
+
+    case 0x07:
+	*primary_bus = priv->bridge.pcmcia->primary_bus;
+	*secondary_bus = priv->bridge.pcmcia->card_bus;
+	*subordinate_bus = priv->bridge.pcmcia->subordinate_bus;
+	break;
+    }
+
+    return 0;
 }

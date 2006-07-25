@@ -41,7 +41,7 @@ dnl refers to ${prefix}.  Thus we have to use `eval' twice.
 
 AC_PREREQ([2.57])
 
-AC_INIT(libpciaccess, 0.5.0, [none yet], libpciaccess)
+AC_INIT(libpciaccess, 0.6.0, [none yet], libpciaccess)
 AM_INIT_AUTOMAKE([dist-bzip2])
 AM_MAINTAINER_MODE
 

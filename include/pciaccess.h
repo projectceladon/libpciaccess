@@ -57,6 +57,9 @@ const struct pci_bridge_info * pci_device_get_bridge_info(
 const struct pci_pcmcia_bridge_info * pci_device_get_pcmcia_bridge_info(
     struct pci_device * dev );
 
+int pci_device_get_bridge_buses(struct pci_device * dev, int *primary_bus,
+    int *secondary_bus, int *subordinate_bus);
+
 int pci_system_init( void );
 
 void pci_system_cleanup( void );
