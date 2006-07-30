@@ -188,6 +188,13 @@ read_bridge_info( struct pci_device_private * priv )
 }
 
 
+/**
+ * Get the PCI bridge information for a device
+ *
+ * \returns
+ * If \c dev is a PCI-to-PCI bridge, a pointer to a \c pci_bridge_info
+ * structure.  Otherwise, \c NULL is returned.
+ */
 const struct pci_bridge_info *
 pci_device_get_bridge_info( struct pci_device * dev )
 {
@@ -201,6 +208,13 @@ pci_device_get_bridge_info( struct pci_device * dev )
 }
 
 
+/**
+ * Get the PCMCIA bridge information for a device
+ *
+ * \returns
+ * If \c dev is a PCI-to-PCMCIA bridge, a pointer to a
+ * \c pci_pcmcia_bridge_info structure.  Otherwise, \c NULL is returned.
+ */
 const struct pci_pcmcia_bridge_info *
 pci_device_get_pcmcia_bridge_info( struct pci_device * dev )
 {
@@ -214,6 +228,26 @@ pci_device_get_pcmcia_bridge_info( struct pci_device * dev )
 }
 
 
+/**
+ * Determine the primary, secondary, and subordinate buses for a bridge
+ * 
+ * Determines the IDs of the primary, secondary, and subordinate buses for
+ * a specified bridge.  Not all bridges directly store this information
+ * (e.g., PCI-to-ISA bridges).  For those bridges, no error is returned, but
+ * -1 is stored in the bus IDs that don't make sense.
+ *
+ * For example, for a PCI-to-ISA bridge, \c primary_bus will be set to the ID
+ * of the bus containing the device and both \c secondary_bus and
+ * \c subordinate_bus will be set to -1.
+ *
+ * \return
+ * On success, zero is returned.  If \c dev is not a bridge, \c ENODEV is
+ * returned.
+ * 
+ * \bug
+ * Host bridges are handled the same way as PCI-to-ISA bridges.  This is
+ * almost certainly not correct.
+ */
 int
 pci_device_get_bridge_buses(struct pci_device * dev, int *primary_bus,
 			    int *secondary_bus, int *subordinate_bus)

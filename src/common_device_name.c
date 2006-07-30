@@ -270,6 +270,13 @@ populate_vendor( struct pci_id_leaf * vend, int fill_device_data )
 }
 
 
+/**
+ * Find the name of the specified device.
+ *
+ * Finds the actual product name of the specified device.  If a subvendor ID
+ * and subdevice ID are specified in \c m, the returned name will be the name
+ * of the subdevice.
+ */
 static const char *
 find_device_name( const struct pci_id_match * m )
 {
@@ -307,6 +314,13 @@ find_device_name( const struct pci_id_match * m )
 }
 
 
+/**
+ * Find the vendor name of the specified device.
+ *
+ * Finds the actual vendor name of the specified device.  If a subvendor ID
+ * and subdevice ID are specified in \c m, the returned name will be the name
+ * associated with the subvendor.
+ */
 static const char *
 find_vendor_name( const struct pci_id_match * m )
 {
@@ -343,8 +357,8 @@ pci_get_strings( const struct pci_id_match * m,
 		 const char ** subvendor_name )
 {
     struct pci_id_match  temp;
-    
-    
+
+
     temp = *m;
     temp.subvendor_id = PCI_MATCH_ANY;
     temp.subdevice_id = PCI_MATCH_ANY;
