@@ -35,6 +35,7 @@
 #include "pciaccess.h"
 #include "pciaccess_private.h"
 
+#ifdef __linux__
 #include <byteswap.h>
 
 #if __BYTE_ORDER == __BIG_ENDIAN
@@ -47,6 +48,17 @@
 # define HTOLE_16(x)   (x)
 # define LETOH_32(x)   (x)
 # define HTOLE_32(x)   (x)
+#endif
+
+#else
+
+#include <sys/endian.h>
+
+#define LETOH_16(x)	le16toh(x)
+#define HTOLE_16(x)	htole16(x)
+#define LETOH_32(x)	le32toh(x)
+#define HTOLE_32(x)	htole32(x)
+
 #endif
 
 /**
