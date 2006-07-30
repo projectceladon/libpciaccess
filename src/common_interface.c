@@ -216,7 +216,7 @@ pci_device_cfg_read_u8( struct pci_device * dev, uint8_t * data,
     int err = pci_device_cfg_read( dev, data, offset, 1, & bytes );
     
     if ( (err == 0) && (bytes != 1) ) {
-	err = ENODATA;
+	err = ENXIO;
     }
 
     return err;
@@ -231,7 +231,7 @@ pci_device_cfg_read_u16( struct pci_device * dev, uint16_t * data,
     int err = pci_device_cfg_read( dev, data, offset, 2, & bytes );
     
     if ( (err == 0) && (bytes != 2) ) {
-	err = ENODATA;
+	err = ENXIO;
     }
 
     *data = LETOH_16( *data );
@@ -247,7 +247,7 @@ pci_device_cfg_read_u32( struct pci_device * dev, uint32_t * data,
     int err = pci_device_cfg_read( dev, data, offset, 4, & bytes );
 
     if ( (err == 0) && (bytes != 4) ) {
-	err = ENODATA;
+	err = ENXIO;
     }
 
     *data = LETOH_32( *data );
