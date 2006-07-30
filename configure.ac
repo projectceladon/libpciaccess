@@ -60,6 +60,18 @@ AC_ARG_WITH(pciids-path,
 	[PCIIDS_PATH="$DEFAULT_PCIIDS_PATH"])
 AC_DEFINE_DIR(PCIIDS_PATH, PCIIDS_PATH, [Path to pci.ids])
 
+case $host_os in
+	*freebsd*)
+		freebsd=yes
+		;;
+	*linux*)
+		linux=yes
+		;;
+esac
+
+AM_CONDITIONAL(LINUX, [test "x$linux" = xyes])
+AM_CONDITIONAL(FREEBSD, [test "x$freebsd" = xyes])
+
 AC_SUBST(PCIACCESS_CFLAGS)
 AC_SUBST(PCIACCESS_LIBS)
 		  

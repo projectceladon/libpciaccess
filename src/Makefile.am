@@ -23,12 +23,20 @@
 
 lib_LTLIBRARIES = libpciaccess.la
 
+if LINUX
+OS_SUPPORT = linux_sysfs.c
+endif
+
+if FREEBSD
+OS_SUPPORT = freebsd_pci.c
+endif
+
 libpciaccess_la_SOURCES = common_iterator.c \
 	common_init.c \
 	common_interface.c \
 	common_capability.c \
 	common_device_name.c \
-	linux_sysfs.c
+	$(OS_SUPPORT)
 
 INCLUDES = -I$(top_srcdir)/include
 
