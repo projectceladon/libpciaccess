@@ -178,6 +178,22 @@ populate_vendor( struct pci_id_leaf * vend, int fill_device_data )
     unsigned vendor = PCI_MATCH_ANY;
 
 
+    /* If the pci.ids file could not be opened, there's nothing we can do.
+     */
+    if (f == NULL) {
+	return;
+    }
+
+
+    /* If the device tree for this vendor is already populated, don't do
+     * anything.  This avoids wasted processing and potential memory leaks.
+     */
+    if (vend->num_devices != 0) {
+	fclose(f);
+	return;
+    }
+
+
     while( fgets( buf, sizeof( buf ), f ) != NULL ) {
 	unsigned num_tabs;
 	char * new_line;
@@ -212,7 +228,12 @@ populate_vendor( struct pci_id_leaf * vend, int fill_device_data )
 	if ( num_tabs == 0 ) {
 	    vendor = (unsigned) strtoul( & buf[ num_tabs ], NULL, 16 );
 	    if ( vend->vendor == vendor ) {
-		vend->vendor_name = strdup( & buf[ num_tabs + 6 ] );
+		/* vendor_name may already be set from a previous invocation
+		 * of this function with fill_device_data = 0.
+		 */
+		if (vend->vendor_name != NULL) {
+		    vend->vendor_name = strdup( & buf[ num_tabs + 6 ] );
+		}
 
 		/* If we're not going to fill in all of the device data as
 		 * well, then bail out now.  We have all the information that
