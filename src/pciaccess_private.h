@@ -53,12 +53,25 @@ struct pci_device_private {
     struct pci_device  base;
     const char * device_string;
     
+    uint8_t header_type;
+
     /**
      * \name PCI Capabilities
      */
     /*@{*/
     const struct pci_agp_info * agp;   /**< AGP capability information. */
     /*@}*/
+    
+    /**
+     * \name Bridge information.
+     */
+    /*@{*/
+    union {
+	struct pci_bridge_info * pci;
+	struct pci_pcmcia_bridge_info * pcmcia;
+    } bridge;
+    /*@}*/
+    
 };
 
 

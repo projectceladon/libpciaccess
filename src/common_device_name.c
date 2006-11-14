@@ -178,6 +178,22 @@ populate_vendor( struct pci_id_leaf * vend, int fill_device_data )
     unsigned vendor = PCI_MATCH_ANY;
 
 
+    /* If the pci.ids file could not be opened, there's nothing we can do.
+     */
+    if (f == NULL) {
+	return;
+    }
+
+
+    /* If the device tree for this vendor is already populated, don't do
+     * anything.  This avoids wasted processing and potential memory leaks.
+     */
+    if (vend->num_devices != 0) {
+	fclose(f);
+	return;
+    }
+
+
     while( fgets( buf, sizeof( buf ), f ) != NULL ) {
 	unsigned num_tabs;
 	char * new_line;
@@ -212,7 +228,12 @@ populate_vendor( struct pci_id_leaf * vend, int fill_device_data )
 	if ( num_tabs == 0 ) {
 	    vendor = (unsigned) strtoul( & buf[ num_tabs ], NULL, 16 );
 	    if ( vend->vendor == vendor ) {
-		vend->vendor_name = strdup( & buf[ num_tabs + 6 ] );
+		/* vendor_name may already be set from a previous invocation
+		 * of this function with fill_device_data = 0.
+		 */
+		if (vend->vendor_name != NULL) {
+		    vend->vendor_name = strdup( & buf[ num_tabs + 6 ] );
+		}
 
 		/* If we're not going to fill in all of the device data as
 		 * well, then bail out now.  We have all the information that
@@ -270,6 +291,13 @@ populate_vendor( struct pci_id_leaf * vend, int fill_device_data )
 }
 
 
+/**
+ * Find the name of the specified device.
+ *
+ * Finds the actual product name of the specified device.  If a subvendor ID
+ * and subdevice ID are specified in \c m, the returned name will be the name
+ * of the subdevice.
+ */
 static const char *
 find_device_name( const struct pci_id_match * m )
 {
@@ -307,6 +335,13 @@ find_device_name( const struct pci_id_match * m )
 }
 
 
+/**
+ * Find the vendor name of the specified device.
+ *
+ * Finds the actual vendor name of the specified device.  If a subvendor ID
+ * and subdevice ID are specified in \c m, the returned name will be the name
+ * associated with the subvendor.
+ */
 static const char *
 find_vendor_name( const struct pci_id_match * m )
 {
@@ -343,8 +378,8 @@ pci_get_strings( const struct pci_id_match * m,
 		 const char ** subvendor_name )
 {
     struct pci_id_match  temp;
-    
-    
+
+
     temp = *m;
     temp.subvendor_id = PCI_MATCH_ANY;
     temp.subdevice_id = PCI_MATCH_ANY;

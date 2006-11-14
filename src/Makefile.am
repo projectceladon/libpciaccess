@@ -31,7 +31,8 @@ if FREEBSD
 OS_SUPPORT = freebsd_pci.c
 endif
 
-libpciaccess_la_SOURCES = common_iterator.c \
+libpciaccess_la_SOURCES = common_bridge.c \
+	common_iterator.c \
 	common_init.c \
 	common_interface.c \
 	common_capability.c \
@@ -42,7 +43,7 @@ INCLUDES = -I$(top_srcdir)/include
 
 libpciaccess_la_LIBADD = @PCIACCESS_LIBS@
 
-libpciaccess_la_LDFLAGS = -version-number 0:4:1 -no-undefined
+libpciaccess_la_LDFLAGS = -version-number 0:6:0 -no-undefined
 
 libpciaccessincludedir = $(includedir)
 libpciaccessinclude_HEADERS = \
