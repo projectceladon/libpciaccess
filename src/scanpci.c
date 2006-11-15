@@ -113,10 +113,10 @@ print_pci_device( struct pci_device * dev, int verbose )
 		(dev->device_class >>  0) & 0x0ff,
 		dev->revision );
 
-	pci_device_cfg_read_u8( dev, & cache_line_size, 8 );
-	pci_device_cfg_read_u8( dev, & latency_timer, 9 );
-	pci_device_cfg_read_u8( dev, & header_type, 10 );
-	pci_device_cfg_read_u8( dev, & bist, 11 );
+	pci_device_cfg_read_u8( dev, & cache_line_size, 12 );
+	pci_device_cfg_read_u8( dev, & latency_timer, 13 );
+	pci_device_cfg_read_u8( dev, & header_type, 14 );
+	pci_device_cfg_read_u8( dev, & bist, 15 );
 
 	printf( "  BIST      0x%02x  HEADER 0x%02x  LATENCY 0x%02x  CACHE 0x%02x\n",
 		bist,
