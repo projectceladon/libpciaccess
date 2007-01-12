@@ -37,6 +37,7 @@ libpciaccess_la_SOURCES = common_bridge.c \
 	common_interface.c \
 	common_capability.c \
 	common_device_name.c \
+	pciaccess_private.h \
 	$(OS_SUPPORT)
 
 INCLUDES = -I$(top_srcdir)/include
