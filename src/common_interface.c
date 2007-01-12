@@ -148,6 +148,72 @@ pci_device_map_region( struct pci_device * dev, unsigned region,
 
 
 /**
+ * Map the specified memory range so that it can be accessed by the CPU.
+ *
+ * Maps the specified memory range for access by the processor.  The pointer
+ * to the mapped region is stored in \c addr.  In addtion, the
+ * \c pci_mem_region::memory pointer for the BAR will be updated.
+ *
+ * \param dev          Device whose memory region is to be mapped.
+ * \param base         Base address of the range to be mapped.
+ * \param size         Size of the range to be mapped.
+ * \param write_enable Map for writing (non-zero).
+ * \param addr         Location to store the mapped address.
+ * 
+ * \return
+ * Zero on success or an \c errno value on failure.
+ *
+ * \sa pci_device_unmap_memory_range, pci_device_map_region
+ */
+int
+pci_device_map_memory_range(struct pci_device *dev, pciaddr_t base,
+			    pciaddr_t size, int write_enable, 
+			    void **addr)
+{
+    unsigned region;
+    int err = 0;
+
+
+    *addr = NULL;
+
+    if (dev == NULL) {
+	return EFAULT;
+    }
+
+
+    for (region = 0; region < 6; region++) {
+	const struct pci_mem_region const* r = &dev->regions[region];
+
+	if (r->size != 0) {
+	    if ((r->base_addr <= base) && ((r->base_addr + r->size) > base)) {
+		if ((base + size) > (r->base_addr + r->size)) {
+		    return E2BIG;
+		}
+
+		break;
+	    }
+	}
+    }
+
+    if (region > 5) {
+	return ENOENT;
+    }
+
+    if (dev->regions[region].memory == NULL) {
+	err = (*pci_sys->methods->map)(dev, region, write_enable);
+    }
+    
+    if (err == 0) {
+	const pciaddr_t offset = base - dev->regions[region].base_addr;
+
+	*addr = ((uint8_t *)dev->regions[region].memory) + offset;
+    }
+
+    return err;
+}
+
+
+/**
  * Unmap the specified BAR so that it can no longer be accessed by the CPU.
  *
  * Unmaps the specified BAR that was previously mapped via
@@ -177,6 +243,57 @@ pci_device_unmap_region( struct pci_device * dev, unsigned region )
     }
     
     return (pci_sys->methods->unmap)( dev, region );
+}
+
+
+/**
+ * Unmap the specified memory range so that it can no longer be accessed by the CPU.
+ *
+ * Unmaps the specified memory range that was previously mapped via
+ * \c pci_device_map_memory_range.
+ *
+ * \param dev          Device whose memory is to be unmapped.
+ * \param memory       Pointer to the base of the mapped range.
+ * \param size         Size, in bytes, of the range to be unmapped.
+ * 
+ * \return
+ * Zero on success or an \c errno value on failure.
+ *
+ * \sa pci_device_map_memory_range, pci_device_unmap_region
+ */
+int
+pci_device_unmap_memory_range(struct pci_device *dev, void *memory,
+			      pciaddr_t size)
+{
+    unsigned region;
+
+
+    if (dev == NULL) {
+	return EFAULT;
+    }
+
+    for (region = 0; region < 6; region++) {
+	const struct pci_mem_region const* r = &dev->regions[region];
+	const uint8_t *const mem = r->memory;
+
+	if (r->size != 0) {
+	    if ((mem <= memory) && ((mem + r->size) > memory)) {
+		if ((memory + size) > (mem + r->size)) {
+		    return E2BIG;
+		}
+
+		break;
+	    }
+	}
+    }
+
+    if (region > 5) {
+	return ENOENT;
+    }
+
+    return (dev->regions[region].memory != NULL)
+	? (*pci_sys->methods->unmap)(dev, region)
+	: 0;
 }
 
 

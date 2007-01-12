@@ -47,6 +47,12 @@ int pci_device_map_region( struct pci_device * dev, unsigned region,
 
 int pci_device_unmap_region( struct pci_device * dev, unsigned region );
 
+int pci_device_map_memory_range(struct pci_device *dev, pciaddr_t base,
+    pciaddr_t size, int write_enable, void **addr);
+
+int pci_device_unmap_memory_range(struct pci_device *dev, void *memory,
+    pciaddr_t size);
+
 int pci_device_probe( struct pci_device * dev );
 
 const struct pci_agp_info * pci_device_get_agp_info( struct pci_device * dev );
