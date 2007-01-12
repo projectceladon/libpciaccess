@@ -185,9 +185,17 @@ pci_device_freebsd_write( struct pci_device * dev, const void * data,
 static int
 pci_device_freebsd_probe( struct pci_device * dev )
 {
+    uint8_t irq;
+    int err;
+
     /* Many of the fields were filled in during initial device enumeration.
      * At this point, we need to fill in regions, rom_size, and irq.
      */
+
+    err = pci_device_cfg_read_u8( dev, &irq, 60 );
+    if (err)
+	return errno;
+    dev->irq = irq;
 
     return 0;
 }
@@ -216,7 +224,7 @@ pci_system_freebsd_create( void )
     int i;
 
     /* Try to open the PCI device */
-    pcidev = open( "/dev/pci", O_RDONLY );
+    pcidev = open( "/dev/pci", O_RDWR );
     if ( pcidev == -1 )
 	return ENXIO;
 
