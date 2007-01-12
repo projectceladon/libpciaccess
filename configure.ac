@@ -60,6 +60,17 @@ AC_ARG_WITH(pciids-path,
 	[PCIIDS_PATH="$DEFAULT_PCIIDS_PATH"])
 AC_DEFINE_DIR(PCIIDS_PATH, PCIIDS_PATH, [Path to pci.ids])
 
+if test "x$GCC" = "xyes"; then
+       GCC_WARNINGS1="-Wall -Wpointer-arith -Wstrict-prototypes"
+       GCC_WARNINGS2="-Wmissing-prototypes -Wmissing-declarations"
+       GCC_WARNINGS3="-Wnested-externs"
+       GCC_WARNINGS="$GCC_WARNINGS1 $GCC_WARNINGS2 $GCC_WARNINGS3"
+       if test "x$WERROR" = "xyes"; then
+               GCC_WARNINGS="${GCC_WARNINGS} -Werror"
+       fi
+       PCIACCESS_CFLAGS="$PCIACCESS_CFLAGS $GCC_WARNINGS"
+fi
+
 case $host_os in
 	*freebsd*)
 		freebsd=yes
