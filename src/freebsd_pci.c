@@ -33,6 +33,7 @@
 
 #include <stdlib.h>
 #include <stdio.h>
+#include <string.h>
 #include <unistd.h>
 #include <fcntl.h>
 #include <errno.h>
@@ -128,6 +129,10 @@ pci_device_freebsd_read( struct pci_device * dev, void * data,
     while ( size > 0 ) {
 	int toread = (size < 4) ? size : 4;
 
+	/* Only power of two allowed. */
+	if (toread == 3)
+	    toread = 2;
+
 	io.pi_reg = offset;
 	io.pi_width = toread;
 
@@ -137,10 +142,12 @@ pci_device_freebsd_read( struct pci_device * dev, void * data,
 	memcpy(data, &io.pi_data, toread );
 
 	offset += toread;
-	data += toread;
+	data = (char *)data + toread;
 	size -= toread;
 	*bytes_read += toread;
     }
+
+    return 0;
 }
 
 
@@ -167,17 +174,29 @@ pci_device_freebsd_write( struct pci_device * dev, const void * data,
 	    return errno;
 
 	offset += towrite;
-	data += towrite;
+	data = (char *)data + towrite;
 	size -= towrite;
 	*bytes_written += towrite;
     }
+
+    return 0;
+}
+
+static int
+pci_device_freebsd_probe( struct pci_device * dev )
+{
+    /* Many of the fields were filled in during initial device enumeration.
+     * At this point, we need to fill in regions, rom_size, and irq.
+     */
+
+    return 0;
 }
 
 static const struct pci_system_methods freebsd_pci_methods = {
     .destroy = NULL, /* XXX: free memory */
     .destroy_device = NULL,
     .read_rom = NULL, /* XXX: Fill me in */
-    .probe = NULL, /* XXX: Fill me in */
+    .probe = pci_device_freebsd_probe,
     .map = pci_device_freebsd_map,
     .unmap = pci_device_freebsd_unmap,
     .read = pci_device_freebsd_read,
@@ -193,7 +212,6 @@ pci_system_freebsd_create( void )
 {
     struct pci_conf_io pciconfio;
     struct pci_conf pciconf[255];
-    struct freebsd_pci_system *freebsd_pci_sys;
     int pcidev;
     int i;
 
@@ -213,7 +231,7 @@ pci_system_freebsd_create( void )
     freebsd_pci_sys->pcidev = pcidev;
 
     /* Probe the list of devices known by the system */
-    bzero( &pciconf, sizeof( struct pci_conf_io ) );
+    bzero( &pciconfio, sizeof( struct pci_conf_io ) );
     pciconfio.match_buf_len = sizeof(pciconf);
     pciconfio.matches = pciconf;
 
@@ -241,6 +259,11 @@ pci_system_freebsd_create( void )
 	pci_sys->devices[ i ].base.bus = p->pc_sel.pc_bus;
 	pci_sys->devices[ i ].base.dev = p->pc_sel.pc_dev;
 	pci_sys->devices[ i ].base.func = p->pc_sel.pc_func;
+	pci_sys->devices[ i ].base.vendor_id = p->pc_vendor;
+	pci_sys->devices[ i ].base.device_id = p->pc_device;
+	pci_sys->devices[ i ].base.subvendor_id = p->pc_subvendor;
+	pci_sys->devices[ i ].base.device_class = (uint32_t)p->pc_class << 16 |
+	    (uint32_t)p->pc_subclass << 8 | (uint32_t)p->pc_progif;
     }
 
     return 0;
