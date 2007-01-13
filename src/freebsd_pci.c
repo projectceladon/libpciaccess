@@ -182,11 +182,117 @@ pci_device_freebsd_write( struct pci_device * dev, const void * data,
     return 0;
 }
 
+/** Returns the number of regions (base address registers) the device has */
+
+static int
+pci_device_freebsd_get_num_regions( struct pci_device * dev )
+{
+    struct pci_device_private *priv = (struct pci_device_private *) dev;
+
+    switch (priv->header_type & 0x7f) {
+    case 0:
+	return 6;
+    case 1:
+	return 2;
+    case 2:
+	return 1;
+    default:
+	printf("unknown header type %02x\n", priv->header_type);
+	return 0;
+    }
+}
+
+/** Masks out the flag bigs of the base address register value */
+static uint32_t
+get_map_base( uint32_t val )
+{
+    if (val & 0x01)
+	return val & ~0x03;
+    else
+	return val & ~0x0f;
+}
+
+/** Returns the size of a region based on the all-ones test value */
+static int
+get_test_val_size( uint32_t testval )
+{
+    int size = 1;
+
+    if (testval == 0)
+	return 0;
+
+    /* Mask out the flag bits */
+    testval = get_map_base( testval );
+
+    while ((testval & 1) == 0) {
+	size <<= 1;
+	testval >>= 1;
+    }
+
+    return size;
+}
+
+/**
+ * Sets the address and size information for the region from config space
+ * registers.
+ *
+ * This would be much better provided by a kernel interface.
+ *
+ * \return 0 on success, or an errno value.
+ */
+static int
+pci_device_freebsd_get_region_info( struct pci_device * dev, int region,
+				    int bar )
+{
+    uint32_t addr, testval, temp;
+    int err;
+
+    /* Get the base address */
+    err = pci_device_cfg_read_u32( dev, &addr, bar );
+    if (err != 0)
+	return err;
+
+    /* Test write all ones to the register, then restore it. */
+    temp = 0xffffffff;
+    err = pci_device_cfg_write_u32( dev, &temp, bar );
+    if (err != 0)
+	return err;
+    pci_device_cfg_read_u32( dev, &testval, bar );
+    err = pci_device_cfg_write_u32( dev, &addr, bar );
+
+    if (addr & 0x01)
+	dev->regions[region].is_IO = 1;
+    if (addr & 0x04)
+	dev->regions[region].is_64 = 1;
+    if (addr & 0x08)
+	dev->regions[region].is_prefetchable = 1;
+
+    /* Set the size */
+    dev->regions[region].size = get_test_val_size( testval );
+
+    /* Set the base address value */
+    if (dev->regions[region].is_64) {
+	uint32_t top;
+
+	err = pci_device_cfg_read_u32( dev, &top, bar + 4 );
+	if (err != 0)
+	    return err;
+
+	dev->regions[region].base_addr = ((uint64_t)top << 32) |
+					  get_map_base(addr);
+    } else {
+	dev->regions[region].base_addr = get_map_base(addr);
+    }
+
+    return 0;
+}
+
 static int
 pci_device_freebsd_probe( struct pci_device * dev )
 {
+    struct pci_device_private *priv = (struct pci_device_private *) dev;
     uint8_t irq;
-    int err;
+    int err, i, bar;
 
     /* Many of the fields were filled in during initial device enumeration.
      * At this point, we need to fill in regions, rom_size, and irq.
@@ -196,6 +302,19 @@ pci_device_freebsd_probe( struct pci_device * dev )
     if (err)
 	return errno;
     dev->irq = irq;
+
+    err = pci_device_cfg_read_u8( dev, &priv->header_type, 0x0e );
+    if (err)
+	return errno;
+
+    bar = 0x10;
+    for (i = 0; i < pci_device_freebsd_get_num_regions( dev ); i++) {
+	pci_device_freebsd_get_region_info( dev, i, bar );
+	if (dev->regions[i].is_64)
+	    bar += 0x08;
+	else
+	    bar += 0x04;
+    }
 
     return 0;
 }
