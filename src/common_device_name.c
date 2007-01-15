@@ -47,10 +47,6 @@
 
 #include "pciaccess.h"
 
-#ifndef PCIIDS_PATH
-# define PCIIDS_PATH "/usr/share/hwdata"
-#endif
-
 #define DO_MATCH(a,b)  (((a) == PCI_MATCH_ANY) || ((a) == (b)))
 
 /**

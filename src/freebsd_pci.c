@@ -33,6 +33,7 @@
 
 #include <stdlib.h>
 #include <stdio.h>
+#include <string.h>
 #include <unistd.h>
 #include <fcntl.h>
 #include <errno.h>
@@ -128,6 +129,10 @@ pci_device_freebsd_read( struct pci_device * dev, void * data,
     while ( size > 0 ) {
 	int toread = (size < 4) ? size : 4;
 
+	/* Only power of two allowed. */
+	if (toread == 3)
+	    toread = 2;
+
 	io.pi_reg = offset;
 	io.pi_width = toread;
 
@@ -137,10 +142,12 @@ pci_device_freebsd_read( struct pci_device * dev, void * data,
 	memcpy(data, &io.pi_data, toread );
 
 	offset += toread;
-	data += toread;
+	data = (char *)data + toread;
 	size -= toread;
 	*bytes_read += toread;
     }
+
+    return 0;
 }
 
 
@@ -167,17 +174,156 @@ pci_device_freebsd_write( struct pci_device * dev, const void * data,
 	    return errno;
 
 	offset += towrite;
-	data += towrite;
+	data = (char *)data + towrite;
 	size -= towrite;
 	*bytes_written += towrite;
     }
+
+    return 0;
+}
+
+/** Returns the number of regions (base address registers) the device has */
+
+static int
+pci_device_freebsd_get_num_regions( struct pci_device * dev )
+{
+    struct pci_device_private *priv = (struct pci_device_private *) dev;
+
+    switch (priv->header_type & 0x7f) {
+    case 0:
+	return 6;
+    case 1:
+	return 2;
+    case 2:
+	return 1;
+    default:
+	printf("unknown header type %02x\n", priv->header_type);
+	return 0;
+    }
+}
+
+/** Masks out the flag bigs of the base address register value */
+static uint32_t
+get_map_base( uint32_t val )
+{
+    if (val & 0x01)
+	return val & ~0x03;
+    else
+	return val & ~0x0f;
+}
+
+/** Returns the size of a region based on the all-ones test value */
+static int
+get_test_val_size( uint32_t testval )
+{
+    int size = 1;
+
+    if (testval == 0)
+	return 0;
+
+    /* Mask out the flag bits */
+    testval = get_map_base( testval );
+
+    while ((testval & 1) == 0) {
+	size <<= 1;
+	testval >>= 1;
+    }
+
+    return size;
+}
+
+/**
+ * Sets the address and size information for the region from config space
+ * registers.
+ *
+ * This would be much better provided by a kernel interface.
+ *
+ * \return 0 on success, or an errno value.
+ */
+static int
+pci_device_freebsd_get_region_info( struct pci_device * dev, int region,
+				    int bar )
+{
+    uint32_t addr, testval, temp;
+    int err;
+
+    /* Get the base address */
+    err = pci_device_cfg_read_u32( dev, &addr, bar );
+    if (err != 0)
+	return err;
+
+    /* Test write all ones to the register, then restore it. */
+    temp = 0xffffffff;
+    err = pci_device_cfg_write_u32( dev, &temp, bar );
+    if (err != 0)
+	return err;
+    pci_device_cfg_read_u32( dev, &testval, bar );
+    err = pci_device_cfg_write_u32( dev, &addr, bar );
+
+    if (addr & 0x01)
+	dev->regions[region].is_IO = 1;
+    if (addr & 0x04)
+	dev->regions[region].is_64 = 1;
+    if (addr & 0x08)
+	dev->regions[region].is_prefetchable = 1;
+
+    /* Set the size */
+    dev->regions[region].size = get_test_val_size( testval );
+
+    /* Set the base address value */
+    if (dev->regions[region].is_64) {
+	uint32_t top;
+
+	err = pci_device_cfg_read_u32( dev, &top, bar + 4 );
+	if (err != 0)
+	    return err;
+
+	dev->regions[region].base_addr = ((uint64_t)top << 32) |
+					  get_map_base(addr);
+    } else {
+	dev->regions[region].base_addr = get_map_base(addr);
+    }
+
+    return 0;
+}
+
+static int
+pci_device_freebsd_probe( struct pci_device * dev )
+{
+    struct pci_device_private *priv = (struct pci_device_private *) dev;
+    uint8_t irq;
+    int err, i, bar;
+
+    /* Many of the fields were filled in during initial device enumeration.
+     * At this point, we need to fill in regions, rom_size, and irq.
+     */
+
+    err = pci_device_cfg_read_u8( dev, &irq, 60 );
+    if (err)
+	return errno;
+    dev->irq = irq;
+
+    err = pci_device_cfg_read_u8( dev, &priv->header_type, 0x0e );
+    if (err)
+	return errno;
+
+    bar = 0x10;
+    for (i = 0; i < pci_device_freebsd_get_num_regions( dev ); i++) {
+	pci_device_freebsd_get_region_info( dev, i, bar );
+	if (dev->regions[i].is_64)
+	    bar += 0x08;
+	else
+	    bar += 0x04;
+    }
+
+    return 0;
 }
 
 static const struct pci_system_methods freebsd_pci_methods = {
     .destroy = NULL, /* XXX: free memory */
     .destroy_device = NULL,
     .read_rom = NULL, /* XXX: Fill me in */
-    .probe = NULL, /* XXX: Fill me in */
+    .probe = pci_device_freebsd_probe,
     .map = pci_device_freebsd_map,
     .unmap = pci_device_freebsd_unmap,
     .read = pci_device_freebsd_read,
@@ -193,12 +339,11 @@ pci_system_freebsd_create( void )
 {
     struct pci_conf_io pciconfio;
     struct pci_conf pciconf[255];
-    struct freebsd_pci_system *freebsd_pci_sys;
     int pcidev;
     int i;
 
     /* Try to open the PCI device */
-    pcidev = open( "/dev/pci", O_RDONLY );
+    pcidev = open( "/dev/pci", O_RDWR );
     if ( pcidev == -1 )
 	return ENXIO;
 
@@ -213,7 +358,7 @@ pci_system_freebsd_create( void )
     freebsd_pci_sys->pcidev = pcidev;
 
     /* Probe the list of devices known by the system */
-    bzero( &pciconf, sizeof( struct pci_conf_io ) );
+    bzero( &pciconfio, sizeof( struct pci_conf_io ) );
     pciconfio.match_buf_len = sizeof(pciconf);
     pciconfio.matches = pciconf;
 
@@ -241,6 +386,11 @@ pci_system_freebsd_create( void )
 	pci_sys->devices[ i ].base.bus = p->pc_sel.pc_bus;
 	pci_sys->devices[ i ].base.dev = p->pc_sel.pc_dev;
 	pci_sys->devices[ i ].base.func = p->pc_sel.pc_func;
+	pci_sys->devices[ i ].base.vendor_id = p->pc_vendor;
+	pci_sys->devices[ i ].base.device_id = p->pc_device;
+	pci_sys->devices[ i ].base.subvendor_id = p->pc_subvendor;
+	pci_sys->devices[ i ].base.device_class = (uint32_t)p->pc_class << 16 |
+	    (uint32_t)p->pc_subclass << 8 | (uint32_t)p->pc_progif;
     }
 
     return 0;

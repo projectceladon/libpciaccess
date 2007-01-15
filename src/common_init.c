@@ -35,8 +35,6 @@
 #include "pciaccess.h"
 #include "pciaccess_private.h"
 
-extern int pci_system_linux_sysfs_create( void );
-
 struct pci_system * pci_sys;
 
 /**

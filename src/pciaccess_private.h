@@ -96,3 +96,6 @@ struct pci_system {
 };
 
 extern struct pci_system * pci_sys;
+
+extern int pci_system_linux_sysfs_create( void );
+extern int pci_system_freebsd_create( void );
