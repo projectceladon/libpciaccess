@@ -425,8 +425,8 @@ pci_device_cfg_write( struct pci_device * dev, const void * data,
 
 
 int
-pci_device_cfg_write_u8( struct pci_device * dev, const uint8_t * data,
-			 pciaddr_t offset )
+pci_device_cfg_write_u8(struct pci_device *dev, uint8_t data,
+			pciaddr_t offset)
 {
     pciaddr_t bytes;
     int err = pci_device_cfg_write( dev, data, offset, 1, & bytes );
@@ -441,11 +441,11 @@ pci_device_cfg_write_u8( struct pci_device * dev, const uint8_t * data,
   
 
 int
-pci_device_cfg_write_u16( struct pci_device * dev, const uint16_t * data,
-			  pciaddr_t offset )
+pci_device_cfg_write_u16(struct pci_device *dev, uint16_t data,
+			 pciaddr_t offset)
 {
     pciaddr_t bytes;
-    const uint16_t temp = HTOLE_16( *data );
+    const uint16_t temp = HTOLE_16(data);
     int err = pci_device_cfg_write( dev, & temp, offset, 2, & bytes );
 
     if ( (err == 0) && (bytes != 2) ) {
@@ -458,11 +458,11 @@ pci_device_cfg_write_u16( struct pci_device * dev, const uint16_t * data,
 
 
 int
-pci_device_cfg_write_u32( struct pci_device * dev, const uint32_t * data,
-			  pciaddr_t offset )
+pci_device_cfg_write_u32(struct pci_device *dev, uint32_t data,
+			 pciaddr_t offset)
 {
     pciaddr_t bytes;
-    const uint32_t temp = HTOLE_32( *data );
+    const uint32_t temp = HTOLE_32(data);
     int err = pci_device_cfg_write( dev, & temp, offset, 4, & bytes );
 
     if ( (err == 0) && (bytes != 4) ) {
@@ -486,7 +486,7 @@ pci_device_cfg_write_bits( struct pci_device * dev, uint32_t mask,
 	temp &= ~mask;
 	temp |= data;
 
-	err = pci_device_cfg_write_u32( dev, & temp, offset );
+	err = pci_device_cfg_write_u32(dev, temp, offset);
     }
 
     return err;

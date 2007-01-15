@@ -102,12 +102,12 @@ int pci_device_cfg_read_u32( struct pci_device * dev, uint32_t * data,
 
 int pci_device_cfg_write    ( struct pci_device * dev, const void * data,
     pciaddr_t offset, pciaddr_t size, pciaddr_t * bytes_written );
-int pci_device_cfg_write_u8 ( struct pci_device * dev, const uint8_t  * data,
-    pciaddr_t offset );
-int pci_device_cfg_write_u16( struct pci_device * dev, const uint16_t * data,
-    pciaddr_t offset );
-int pci_device_cfg_write_u32( struct pci_device * dev, const uint32_t * data,
-    pciaddr_t offset );
+int pci_device_cfg_write_u8 (struct pci_device *dev, uint8_t  data,
+    pciaddr_t offset);
+int pci_device_cfg_write_u16(struct pci_device *dev, uint16_t data,
+    pciaddr_t offset);
+int pci_device_cfg_write_u32(struct pci_device *dev, uint32_t data,
+    pciaddr_t offset);
 int pci_device_cfg_write_bits( struct pci_device * dev, uint32_t mask,
     uint32_t data, pciaddr_t offset );
 
