@@ -429,7 +429,7 @@ pci_device_cfg_write_u8(struct pci_device *dev, uint8_t data,
 			pciaddr_t offset)
 {
     pciaddr_t bytes;
-    int err = pci_device_cfg_write( dev, data, offset, 1, & bytes );
+    int err = pci_device_cfg_write(dev, & data, offset, 1, & bytes);
 
     if ( (err == 0) && (bytes != 1) ) {
 	err = ENOSPC;
