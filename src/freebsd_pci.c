@@ -244,7 +244,7 @@ static int
 pci_device_freebsd_get_region_info( struct pci_device * dev, int region,
 				    int bar )
 {
-    uint32_t addr, testval, temp;
+    uint32_t addr, testval;
     int err;
 
     /* Get the base address */
@@ -253,12 +253,11 @@ pci_device_freebsd_get_region_info( struct pci_device * dev, int region,
 	return err;
 
     /* Test write all ones to the register, then restore it. */
-    temp = 0xffffffff;
-    err = pci_device_cfg_write_u32( dev, &temp, bar );
+    err = pci_device_cfg_write_u32( dev, 0xffffffff, bar );
     if (err != 0)
 	return err;
     pci_device_cfg_read_u32( dev, &testval, bar );
-    err = pci_device_cfg_write_u32( dev, &addr, bar );
+    err = pci_device_cfg_write_u32( dev, addr, bar );
 
     if (addr & 0x01)
 	dev->regions[region].is_IO = 1;
