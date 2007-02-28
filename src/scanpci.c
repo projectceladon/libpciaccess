@@ -48,7 +48,7 @@ print_pci_bridge( const struct pci_bridge_info * info )
 	    info->prefetch_mem_limit );
 }
 
-void
+static void
 print_pci_device( struct pci_device * dev, int verbose )
 {
     const char * dev_name;
