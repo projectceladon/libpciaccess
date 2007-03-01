@@ -319,8 +319,17 @@ pci_device_freebsd_probe( struct pci_device * dev )
     return 0;
 }
 
+static void
+pci_system_freebsd_destroy()
+{
+    close(freebsd_pci_sys->pcidev);
+    free(freebsd_pci_sys->pci_sys.devices);
+    free(freebsd_pci_sys);
+    freebsd_pci_sys = NULL;
+}
+
 static const struct pci_system_methods freebsd_pci_methods = {
-    .destroy = NULL, /* XXX: free memory */
+    .destroy = pci_system_freebsd_destroy,
     .destroy_device = NULL,
     .read_rom = NULL, /* XXX: Fill me in */
     .probe = pci_device_freebsd_probe,
