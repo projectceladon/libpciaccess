@@ -78,7 +78,8 @@ pci_device_freebsd_map( struct pci_device *dev, unsigned region,
 
     prot = write_enable ? (PROT_READ | PROT_WRITE) : PROT_READ;
     dev->regions[ region ].memory = mmap( NULL, dev->regions[ region ].size,
-					  prot, MAP_SHARED, fd, 0 );
+					  prot, MAP_SHARED, fd,
+					  dev->regions[ region ].base_addr);
 
     if ( dev->regions[ region ].memory == MAP_FAILED ) {
 	dev->regions[ region ].memory = NULL;
