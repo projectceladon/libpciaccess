@@ -51,6 +51,9 @@
  * It is initialized once and used as a global, just as pci_system is used.
  */
 struct freebsd_pci_system {
+    /* This must be the first entry in the structure, as pci_system_cleanup()
+     * frees pci_sys.
+     */
     struct pci_system pci_sys;
 
     int pcidev; /**< fd for /dev/pci */
@@ -82,6 +85,7 @@ pci_device_freebsd_map( struct pci_device *dev, unsigned region,
 					  dev->regions[ region ].base_addr);
 
     if ( dev->regions[ region ].memory == MAP_FAILED ) {
+	close( fd );
 	dev->regions[ region ].memory = NULL;
 	err = errno;
     }
@@ -320,17 +324,16 @@ pci_device_freebsd_probe( struct pci_device * dev )
 }
 
 static void
-pci_system_freebsd_destroy()
+pci_system_freebsd_destroy(void)
 {
     close(freebsd_pci_sys->pcidev);
     free(freebsd_pci_sys->pci_sys.devices);
-    free(freebsd_pci_sys);
     freebsd_pci_sys = NULL;
 }
 
 static const struct pci_system_methods freebsd_pci_methods = {
     .destroy = pci_system_freebsd_destroy,
-    .destroy_device = NULL,
+    .destroy_device = NULL, /* nothing to do for this */
     .read_rom = NULL, /* XXX: Fill me in */
     .probe = pci_device_freebsd_probe,
     .map = pci_device_freebsd_map,
