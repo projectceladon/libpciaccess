@@ -40,12 +40,12 @@ struct pci_device_iterator;
 struct pci_id_match;
 struct pci_slot_match;
 
-int pci_device_read_rom( struct pci_device * dev, void * buffer );
+int pci_device_read_rom(struct pci_device *dev, void *buffer);
 
-int pci_device_map_region( struct pci_device * dev, unsigned region,
-    int write_enable );
+int pci_device_map_region(struct pci_device *dev, unsigned region,
+    int write_enable);
 
-int pci_device_unmap_region( struct pci_device * dev, unsigned region );
+int pci_device_unmap_region(struct pci_device *dev, unsigned region);
 
 int pci_device_map_memory_range(struct pci_device *dev, pciaddr_t base,
     pciaddr_t size, int write_enable, void **addr);
@@ -53,63 +53,63 @@ int pci_device_map_memory_range(struct pci_device *dev, pciaddr_t base,
 int pci_device_unmap_memory_range(struct pci_device *dev, void *memory,
     pciaddr_t size);
 
-int pci_device_probe( struct pci_device * dev );
+int pci_device_probe(struct pci_device *dev);
 
-const struct pci_agp_info * pci_device_get_agp_info( struct pci_device * dev );
+const struct pci_agp_info *pci_device_get_agp_info(struct pci_device *dev);
 
-const struct pci_bridge_info * pci_device_get_bridge_info(
-    struct pci_device * dev );
+const struct pci_bridge_info *pci_device_get_bridge_info(
+    struct pci_device *dev);
 
-const struct pci_pcmcia_bridge_info * pci_device_get_pcmcia_bridge_info(
-    struct pci_device * dev );
+const struct pci_pcmcia_bridge_info *pci_device_get_pcmcia_bridge_info(
+    struct pci_device *dev);
 
-int pci_device_get_bridge_buses(struct pci_device * dev, int *primary_bus,
+int pci_device_get_bridge_buses(struct pci_device *dev, int *primary_bus,
     int *secondary_bus, int *subordinate_bus);
 
-int pci_system_init( void );
+int pci_system_init(void);
 
-void pci_system_cleanup( void );
+void pci_system_cleanup(void);
 
-struct pci_device_iterator * pci_slot_match_iterator_create(
-    const struct pci_slot_match * match );
+struct pci_device_iterator *pci_slot_match_iterator_create(
+    const struct pci_slot_match *match);
 
-struct pci_device_iterator * pci_id_match_iterator_create(
-    const struct pci_id_match * match );
+struct pci_device_iterator *pci_id_match_iterator_create(
+    const struct pci_id_match *match);
 
-void pci_iterator_destroy( struct pci_device_iterator * iter );
+void pci_iterator_destroy(struct pci_device_iterator *iter);
 
-struct pci_device * pci_device_next( struct pci_device_iterator * iter );
+struct pci_device *pci_device_next(struct pci_device_iterator *iter);
 
-struct pci_device * pci_device_find_by_slot( uint32_t domain, uint32_t bus,
-    uint32_t dev, uint32_t func );
+struct pci_device *pci_device_find_by_slot(uint32_t domain, uint32_t bus,
+    uint32_t dev, uint32_t func);
 
-void pci_get_strings( const struct pci_id_match * m,
-    const char ** device_name, const char ** vendor_name,
-    const char ** subdevice_name, const char ** subvendor_name );
-const char * pci_device_get_device_name( const struct pci_device * dev );
-const char * pci_device_get_subdevice_name( const struct pci_device * dev );
-const char * pci_device_get_vendor_name( const struct pci_device * dev );
-const char * pci_device_get_subvendor_name( const struct pci_device * dev );
+void pci_get_strings(const struct pci_id_match *m,
+    const char **device_name, const char **vendor_name,
+    const char **subdevice_name, const char **subvendor_name);
+const char *pci_device_get_device_name(const struct pci_device *dev);
+const char *pci_device_get_subdevice_name(const struct pci_device *dev);
+const char *pci_device_get_vendor_name(const struct pci_device *dev);
+const char *pci_device_get_subvendor_name(const struct pci_device *dev);
 
-int pci_device_cfg_read    ( struct pci_device * dev, void * data,
-    pciaddr_t offset, pciaddr_t size, pciaddr_t * bytes_read );
-int pci_device_cfg_read_u8 ( struct pci_device * dev, uint8_t  * data,
-    pciaddr_t offset );
-int pci_device_cfg_read_u16( struct pci_device * dev, uint16_t * data,
-    pciaddr_t offset );
-int pci_device_cfg_read_u32( struct pci_device * dev, uint32_t * data,
-    pciaddr_t offset );
+int pci_device_cfg_read    (struct pci_device *dev, void *data,
+    pciaddr_t offset, pciaddr_t size, pciaddr_t *bytes_read);
+int pci_device_cfg_read_u8 (struct pci_device *dev, uint8_t  *data,
+    pciaddr_t offset);
+int pci_device_cfg_read_u16(struct pci_device *dev, uint16_t *data,
+    pciaddr_t offset);
+int pci_device_cfg_read_u32(struct pci_device *dev, uint32_t *data,
+    pciaddr_t offset);
 
-int pci_device_cfg_write    ( struct pci_device * dev, const void * data,
-    pciaddr_t offset, pciaddr_t size, pciaddr_t * bytes_written );
+int pci_device_cfg_write    (struct pci_device *dev, const void *data,
+    pciaddr_t offset, pciaddr_t size, pciaddr_t *bytes_written);
 int pci_device_cfg_write_u8 (struct pci_device *dev, uint8_t  data,
     pciaddr_t offset);
 int pci_device_cfg_write_u16(struct pci_device *dev, uint16_t data,
     pciaddr_t offset);
 int pci_device_cfg_write_u32(struct pci_device *dev, uint32_t data,
     pciaddr_t offset);
-int pci_device_cfg_write_bits( struct pci_device * dev, uint32_t mask,
-    uint32_t data, pciaddr_t offset );
+int pci_device_cfg_write_bits(struct pci_device *dev, uint32_t mask,
+    uint32_t data, pciaddr_t offset);
 
 #define PCI_MATCH_ANY  (~0)
 
@@ -138,7 +138,7 @@ struct pci_id_match {
     uint32_t    subdevice_id;
     /*@}*/
 
-    
+
     /**
      * \name Device class matching controls
      * 
@@ -147,7 +147,7 @@ struct pci_id_match {
     uint32_t    device_class;
     uint32_t    device_class_mask;
     /*@}*/
-    
+
     intptr_t    match_data;
 };
 
@@ -179,7 +179,7 @@ struct pci_mem_region {
     /**
      * When the region is mapped, this is the pointer to the memory.
      */
-    void * memory;
+    void *memory;
 
     pciaddr_t bus_addr;
     pciaddr_t base_addr;
@@ -189,13 +189,13 @@ struct pci_mem_region {
      * Size, in bytes, of the region.
      */
     pciaddr_t size;
-    
+
 
     /**
      * Is the region I/O ports or memory?
      */
     unsigned is_IO:1;
-    
+
     /**
      * Is the memory region prefetchable?
      *
@@ -217,7 +217,7 @@ struct pci_mem_region {
 
 /**
  * PCI device.
- * 
+ *
  * Contains all of the information about a particular PCI device.
  */
 struct pci_device {
@@ -238,7 +238,7 @@ struct pci_device {
 
     /**
      * \name Vendor / device ID
-     * 
+     *
      * The vendor ID, device ID, and sub-IDs for the device.
      */
     /*@{*/
@@ -293,7 +293,7 @@ struct pci_device {
 
 /**
  * Description of the AGP capability of the device.
- * 
+ *
  * \sa pci_device_get_agp_info
  */
 struct pci_agp_info {
@@ -304,7 +304,7 @@ struct pci_agp_info {
      */
     unsigned    config_offset;
 
-   
+
     /**
      * \name AGP major / minor version.
      */
@@ -335,7 +335,7 @@ struct pci_agp_info {
 
 /**
  * Description of a PCI-to-PCI bridge device.
- * 
+ *
  * \sa pci_device_get_bridge_info
  */
 struct pci_bridge_info {
@@ -363,7 +363,7 @@ struct pci_bridge_info {
 
 /**
  * Description of a PCI-to-PCMCIA bridge device.
- * 
+ *
  * \sa pci_device_get_pcmcia_bridge_info
  */
 struct pci_pcmcia_bridge_info {
