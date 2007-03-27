@@ -82,7 +82,7 @@ static const struct pci_system_methods linux_sysfs_methods = {
 #define SYS_BUS_PCI "/sys/bus/pci/devices"
 
 
-static void populate_entries( struct pci_system * pci_sys );
+static int populate_entries(struct pci_system * pci_sys);
 
 
 /**
@@ -103,7 +103,7 @@ pci_system_linux_sysfs_create( void )
 	pci_sys = calloc( 1, sizeof( struct pci_system ) );
 	if ( pci_sys != NULL ) {
 	    pci_sys->methods = & linux_sysfs_methods;
-	    populate_entries( pci_sys );
+	    err = populate_entries(pci_sys);
 	}
 	else {
 	    err = ENOMEM;
@@ -135,12 +135,13 @@ scan_sys_pci_filter( const struct dirent * d )
 }
 
 
-void
+int
 populate_entries( struct pci_system * p )
 {
     struct dirent ** devices;
     int n;
     int i;
+    int err;
 
 
     n = scandir( SYS_BUS_PCI, & devices, scan_sys_pci_filter, alphasort );
@@ -148,20 +149,57 @@ populate_entries( struct pci_system * p )
 	p->num_devices = n;
 	p->devices = calloc( n, sizeof( struct pci_device_private ) );
 
+	if (p->devices != NULL) {
+	    for (i = 0 ; i < n ; i++) {
+		uint8_t config[48];
+		pciaddr_t bytes;
+		unsigned dom, bus, dev, func;
+		struct pci_device_private *device =
+			(struct pci_device_private *) &p->devices[i];
 
-	for ( i = 0 ; i < n ; i++ ) {
-	    unsigned dom, bus, dev, func;
+
+		sscanf(devices[i]->d_name, "%04x:%02x:%02x.%1u",
+		       & dom, & bus, & dev, & func);
+
+		device->base.domain = dom;
+		device->base.bus = bus;
+		device->base.dev = dev;
+		device->base.func = func;
 
 
-	    sscanf( devices[ i ]->d_name, "%04x:%02x:%02x.%1u",
-		    & dom, & bus, & dev, & func );
+		err = pci_device_linux_sysfs_read(& device->base, config, 0,
+						  48, & bytes);
+		if ((bytes == 48) && !err) {
+		    device->base.vendor_id = (uint16_t)config[0]
+			+ ((uint16_t)config[1] << 8);
+		    device->base.device_id = (uint16_t)config[2]
+			+ ((uint16_t)config[3] << 8);
+		    device->base.device_class = (uint32_t)config[9]
+			+ ((uint32_t)config[10] << 8)
+			+ ((uint32_t)config[11] << 16);
+		    device->base.revision = config[8];
+		    device->base.subvendor_id = (uint16_t)config[44]
+			+ ((uint16_t)config[45] << 8);
+		    device->base.subdevice_id = (uint16_t)config[46]
+			+ ((uint16_t)config[47] << 8);
+		}
 
-	    p->devices[ i ].base.domain = dom;
-	    p->devices[ i ].base.bus = bus;
-	    p->devices[ i ].base.dev = dev;
-	    p->devices[ i ].base.func = func;
+		if (err) {
+		    break;
+		}
+	    }
+	}
+	else {
+	    err = ENOMEM;
 	}
     }
+
+    if (err) {
+	free(p->devices);
+	p->devices = NULL;
+    }
+
+    return err;
 }
 
 
@@ -181,15 +219,7 @@ pci_device_linux_sysfs_probe( struct pci_device * dev )
     if ( bytes >= 64 ) {
 	struct pci_device_private *priv = (struct pci_device_private *) dev;
 
-	dev->vendor_id = (uint16_t)config[0] + ((uint16_t)config[1] << 8);
-	dev->device_id = (uint16_t)config[2] + ((uint16_t)config[3] << 8);
-	dev->device_class = (uint32_t)config[9] + ((uint32_t)config[10] << 8)
-	  + ((uint32_t)config[11] << 16);
-	dev->revision = config[8];
-	dev->subvendor_id = (uint16_t)config[44] + ((uint16_t)config[45] << 8);
-	dev->subdevice_id = (uint16_t)config[46] + ((uint16_t)config[47] << 8);
 	dev->irq = config[60];
-
 	priv->header_type = config[14];
 
 
