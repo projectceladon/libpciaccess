@@ -55,7 +55,16 @@ read_bridge_info( struct pci_device_private * priv )
 {
     uint8_t  buf[0x40];
     pciaddr_t bytes;
+    int err;
 
+
+    /* Make sure the device has been probed.  If not, header_type won't be
+     * set and the rest of this function will fail.
+     */
+    err = pci_device_probe(& priv->base);
+    if (err) {
+	return err;
+    }
 
     switch ( priv->header_type & 0x7f ) {
     case 0x00:
