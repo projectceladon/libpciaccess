@@ -124,6 +124,7 @@ print_pci_device( struct pci_device * dev, int verbose )
 		latency_timer,
 		cache_line_size );
 	
+	pci_device_probe( dev );
 	for ( i = 0 ; i < 6 ; i++ ) {
 	    if ( dev->regions[i].base_addr != 0 ) {
 		printf( "  BASE%u     0x%08x  addr 0x%08x  %s",
@@ -181,7 +182,6 @@ int main( int argc, char ** argv )
     iter = pci_slot_match_iterator_create( NULL );
 
     while ( (dev = pci_device_next( iter )) != NULL ) {
-	pci_device_probe( dev );
 	print_pci_device( dev, 1 );
     }
 
