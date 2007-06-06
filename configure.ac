@@ -78,10 +78,14 @@ case $host_os in
 	*linux*)
 		linux=yes
 		;;
+	*solaris*)
+		solaris=yes
+		;;
 esac
 
 AM_CONDITIONAL(LINUX, [test "x$linux" = xyes])
 AM_CONDITIONAL(FREEBSD, [test "x$freebsd" = xyes])
+AM_CONDITIONAL(SOLARIS, [test "x$solaris" = xyes])
 
 AC_SUBST(PCIACCESS_CFLAGS)
 AC_SUBST(PCIACCESS_LIBS)
