@@ -46,6 +46,7 @@
 
 #include "pciaccess.h"
 #include "pciaccess_private.h"
+#include "linux_devmem.h"
 
 static int pci_device_linux_sysfs_read_rom( struct pci_device * dev,
     void * buffer );
@@ -278,6 +279,7 @@ pci_device_linux_sysfs_probe( struct pci_device * dev )
 	    high_addr = strtoull( next, & next, 16 );
 	    flags = strtoull( next, & next, 16 );
 	    if ( low_addr != 0 ) {
+		priv->rom_base = low_addr;
 		dev->rom_size = (high_addr - low_addr) + 1;
 	    }
 	}
@@ -306,7 +308,10 @@ pci_device_linux_sysfs_read_rom( struct pci_device * dev, void * buffer )
     
     fd = open( name, O_RDWR );
     if ( fd == -1 ) {
-	return errno;
+	/* If reading the ROM using sysfs fails, fall back to the old
+	 * /dev/mem based interface.
+	 */
+	return pci_device_linux_devmem_read_rom(dev, buffer);
     }
 
 

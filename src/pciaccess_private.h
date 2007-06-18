@@ -63,6 +63,11 @@ struct pci_device_private {
     /*@}*/
     
     /**
+     * Base address of the device's expansion ROM.
+     */
+    pciaddr_t rom_base;
+
+    /**
      * \name Bridge information.
      */
     /*@{*/
