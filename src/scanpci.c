@@ -24,6 +24,7 @@
 
 #include <stdlib.h>
 #include <stdio.h>
+#include <err.h>
 
 #include "pciaccess.h"
 
@@ -176,8 +177,11 @@ int main( int argc, char ** argv )
 {
     struct pci_device_iterator * iter;
     struct pci_device * dev;
+    int ret;
 
-    pci_system_init();
+    ret = pci_system_init();
+    if (ret != 0)
+	err(1, "Couldn't initialize PCI system");
 
     iter = pci_slot_match_iterator_create( NULL );
 
