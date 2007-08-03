@@ -44,6 +44,12 @@
 #include "pciaccess.h"
 #include "pciaccess_private.h"
 
+#define	PCIC_DISPLAY	0x03
+#define	PCIS_DISPLAY_VGA	0x00
+#define	PCIS_DISPLAY_XGA	0x01
+#define	PCIS_DISPLAY_3D		0x02
+#define	PCIS_DISPLAY_OTHER	0x80
+
 /**
  * FreeBSD private pci_system structure that extends the base pci_system
  * structure.
@@ -187,6 +193,42 @@ pci_device_freebsd_write( struct pci_device * dev, const void * data,
     return 0;
 }
 
+/**
+ * Read a VGA rom using the 0xc0000 mapping.
+ *
+ * This function should be extended to handle access through PCI resources,
+ * which should be more reliable when available.
+ */
+static int
+pci_device_freebsd_read_rom( struct pci_device * dev, void * buffer )
+{
+    void *bios;
+    int memfd;
+
+    if ( ( dev->device_class & 0x00ffff00 ) !=
+	 ( ( PCIC_DISPLAY << 16 ) | ( PCIS_DISPLAY_VGA << 8 ) ) )
+    {
+	return ENOSYS;
+    }
+
+    memfd = open( "/dev/mem", O_RDONLY );
+    if ( memfd == -1 )
+	return errno;
+
+    bios = mmap( NULL, dev->rom_size, PROT_READ, 0, memfd, 0xc0000 );
+    if ( bios == MAP_FAILED ) {
+	close( memfd );
+	return errno;
+    }
+
+    memcpy( buffer, bios, dev->rom_size );
+
+    munmap( bios, dev->rom_size );
+    close( memfd );
+
+    return 0;
+}
+
 /** Returns the number of regions (base address registers) the device has */
 
 static int
@@ -320,6 +362,15 @@ pci_device_freebsd_probe( struct pci_device * dev )
 	    bar += 0x04;
     }
 
+    /* If it's a VGA device, set up the rom size for read_rom using the
+     * 0xc0000 mapping.
+     */
+    if ((dev->device_class & 0x00ffff00) ==
+	((PCIC_DISPLAY << 16) | (PCIS_DISPLAY_VGA << 8)))
+    {
+	dev->rom_size = 64 * 1024;
+    }
+
     return 0;
 }
 
@@ -334,7 +385,7 @@ pci_system_freebsd_destroy(void)
 static const struct pci_system_methods freebsd_pci_methods = {
     .destroy = pci_system_freebsd_destroy,
     .destroy_device = NULL, /* nothing to do for this */
-    .read_rom = NULL, /* XXX: Fill me in */
+    .read_rom = pci_device_freebsd_read_rom,
     .probe = pci_device_freebsd_probe,
     .map = pci_device_freebsd_map,
     .unmap = pci_device_freebsd_unmap,
