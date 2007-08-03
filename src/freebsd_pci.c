@@ -401,6 +401,7 @@ pci_system_freebsd_create( void )
 	pci_sys->devices[ i ].base.vendor_id = p->pc_vendor;
 	pci_sys->devices[ i ].base.device_id = p->pc_device;
 	pci_sys->devices[ i ].base.subvendor_id = p->pc_subvendor;
+	pci_sys->devices[ i ].base.subdevice_id = p->pc_subdevice;
 	pci_sys->devices[ i ].base.device_class = (uint32_t)p->pc_class << 16 |
 	    (uint32_t)p->pc_subclass << 8 | (uint32_t)p->pc_progif;
     }
