@@ -26,7 +26,7 @@ AM_CFLAGS = @PCIACCESS_CFLAGS@
 lib_LTLIBRARIES = libpciaccess.la
 
 if LINUX
-OS_SUPPORT = linux_sysfs.c linux_devmem.c
+OS_SUPPORT = linux_sysfs.c linux_devmem.c linux_devmem.h
 endif
 
 if FREEBSD
