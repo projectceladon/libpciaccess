@@ -67,60 +67,34 @@ struct freebsd_pci_system {
 
 /**
  * Map a memory region for a device using /dev/mem.
- *
- * \param dev          Device whose memory region is to be mapped.
- * \param region       Region, on the range [0, 5], that is to be mapped.
- * \param write_enable Map for writing (non-zero).
- *
+ * 
+ * \param dev   Device whose memory region is to be mapped.
+ * \param map   Parameters of the mapping that is to be created.
+ * 
  * \return
  * Zero on success or an \c errno value on failure.
  */
 static int
-pci_device_freebsd_map( struct pci_device *dev, unsigned region,
-			int write_enable )
+pci_device_freebsd_map_range(struct pci_device *dev,
+			     struct pci_device_mapping *map)
 {
-    int fd, err = 0, prot;
+    const int prot = ((map->flags & PCI_DEV_MAP_FLAG_WRITABLE) != 0) 
+        ? (PROT_READ | PROT_WRITE) : PROT_READ;
+    const int open_flags = ((map->flags & PCI_DEV_MAP_FLAG_WRITABLE) != 0) 
+        ? O_RDWR : O_RDONLY;
+    int fd, err = 0;
 
-    fd = open( "/dev/mem", write_enable ? O_RDWR : O_RDONLY );
-    if ( fd == -1 )
+    fd = open("/dev/mem", open_flags);
+    if (fd == -1)
 	return errno;
 
-    prot = write_enable ? (PROT_READ | PROT_WRITE) : PROT_READ;
-    dev->regions[ region ].memory = mmap( NULL, dev->regions[ region ].size,
-					  prot, MAP_SHARED, fd,
-					  dev->regions[ region ].base_addr);
+    map->memory = mmap(NULL, map->size, prot, MAP_SHARED, fd, map->base);
 
-    if ( dev->regions[ region ].memory == MAP_FAILED ) {
-	close( fd );
-	dev->regions[ region ].memory = NULL;
+    if (map->memory == MAP_FAILED) {
 	err = errno;
     }
 
-    close( fd );
-
-    return err;
-}
-
-/**
- * Unmap the specified region.
- *
- * \param dev          Device whose memory region is to be unmapped.
- * \param region       Region, on the range [0, 5], that is to be unmapped.
- *
- * \return
- * Zero on success or an \c errno value on failure.
- */
-static int
-pci_device_freebsd_unmap( struct pci_device * dev, unsigned region )
-{
-    int err = 0;
-
-    if ( munmap( dev->regions[ region ].memory,
-		 dev->regions[ region ].size ) == -1) {
-	err = errno;
-    }
-
-    dev->regions[ region ].memory = NULL;
+    close(fd);
 
     return err;
 }
@@ -387,8 +361,8 @@ static const struct pci_system_methods freebsd_pci_methods = {
     .destroy_device = NULL, /* nothing to do for this */
     .read_rom = pci_device_freebsd_read_rom,
     .probe = pci_device_freebsd_probe,
-    .map = pci_device_freebsd_map,
-    .unmap = pci_device_freebsd_unmap,
+    .map_range = pci_device_freebsd_map_range,
+    .unmap_range = pci_device_generic_unmap_range,
     .read = pci_device_freebsd_read,
     .write = pci_device_freebsd_write,
     .fill_capabilities = pci_fill_capabilities_generic,

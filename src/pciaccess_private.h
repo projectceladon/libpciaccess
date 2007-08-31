@@ -30,15 +30,20 @@
  */
 
 
+struct pci_device_mapping;
+
 int pci_fill_capabilities_generic( struct pci_device * dev );
+int pci_device_generic_unmap_range(struct pci_device *dev,
+    struct pci_device_mapping *map);
 
 struct pci_system_methods {
     void (*destroy)( void );
     void (*destroy_device)( struct pci_device * dev );
     int (*read_rom)( struct pci_device * dev, void * buffer );    
     int (*probe)( struct pci_device * dev );
-    int (*map)( struct pci_device * dev, unsigned region, int write_enable );
-    int (*unmap)( struct pci_device * dev, unsigned region );
+    int (*map_range)(struct pci_device *dev, struct pci_device_mapping *map);
+    int (*unmap_range)(struct pci_device * dev,
+		       struct pci_device_mapping *map);
     
     int (*read)(struct pci_device * dev, void * data, pciaddr_t offset,
 		pciaddr_t size, pciaddr_t * bytes_read );
@@ -47,6 +52,14 @@ struct pci_system_methods {
 		pciaddr_t size, pciaddr_t * bytes_written );
 
     int (*fill_capabilities)( struct pci_device * dev );
+};
+
+struct pci_device_mapping {
+    pciaddr_t base;
+    pciaddr_t size;
+    unsigned region;
+    unsigned flags;
+    void *memory;
 };
 
 struct pci_device_private {
@@ -76,7 +89,14 @@ struct pci_device_private {
 	struct pci_pcmcia_bridge_info * pcmcia;
     } bridge;
     /*@}*/
-    
+
+    /**
+     * \name Mappings active on this device.
+     */
+    /*@{*/
+    struct pci_device_mapping *mappings;
+    unsigned num_mappings;
+    /*@}*/
 };
 
 
@@ -98,6 +118,10 @@ struct pci_system {
      * Array of known devices.
      */
     struct pci_device_private * devices;
+
+#ifdef HAVE_MTRR
+    int mtrr_fd;
+#endif
 };
 
 extern struct pci_system * pci_sys;

@@ -41,7 +41,7 @@ dnl refers to ${prefix}.  Thus we have to use `eval' twice.
 
 AC_PREREQ([2.57])
 
-AC_INIT(libpciaccess, 0.9.1, [none yet], libpciaccess)
+AC_INIT(libpciaccess, 0.10.0, [none yet], libpciaccess)
 AM_INIT_AUTOMAKE([dist-bzip2])
 AM_MAINTAINER_MODE
 
@@ -86,6 +86,12 @@ esac
 AM_CONDITIONAL(LINUX, [test "x$linux" = xyes])
 AM_CONDITIONAL(FREEBSD, [test "x$freebsd" = xyes])
 AM_CONDITIONAL(SOLARIS, [test "x$solaris" = xyes])
+
+AC_CHECK_FILE([/usr/include/asm/mtrr.h],
+              [have_mtrr_h="yes"], [have_mtrr_h="no"])
+if test "x$have_mtrr_h" = xyes; then
+    AC_DEFINE(HAVE_MTRR, 1, [Use MTRRs on mappings])
+fi
 
 AC_SUBST(PCIACCESS_CFLAGS)
 AC_SUBST(PCIACCESS_LIBS)
