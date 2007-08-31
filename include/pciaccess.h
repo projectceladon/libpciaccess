@@ -201,10 +201,35 @@ struct pci_slot_match {
 struct pci_mem_region {
     /**
      * When the region is mapped, this is the pointer to the memory.
+     *
+     * This field is \b only set when the deprecated \c pci_device_map_region
+     * interface is used.  Use \c pci_device_map_range instead.
+     *
+     * \deprecated
      */
     void *memory;
 
+
+    /**
+     * Base physical address of the region within its bus / domain.
+     *
+     * \warning
+     * This address is really only useful to other devices in the same
+     * domain.  It's probably \b not the address applications will ever
+     * use.
+     * 
+     * \warning
+     * Most (all?) platform back-ends leave this field unset.
+     */
     pciaddr_t bus_addr;
+
+
+    /**
+     * Base physical address of the region from the CPU's point of view.
+     * 
+     * This address is typically passed to \c pci_device_map_range to create
+     * a mapping of the region to the CPU's virtual address space.
+     */
     pciaddr_t base_addr;
 
 
