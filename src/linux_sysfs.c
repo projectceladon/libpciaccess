@@ -63,6 +63,9 @@ static int pci_device_linux_sysfs_probe( struct pci_device * dev );
 static int pci_device_linux_sysfs_map_range(struct pci_device *dev,
     struct pci_device_mapping *map);
 
+static int pci_device_linux_sysfs_unmap_range(struct pci_device *dev,
+    struct pci_device_mapping *map);
+
 static int pci_device_linux_sysfs_read( struct pci_device * dev, void * data,
     pciaddr_t offset, pciaddr_t size, pciaddr_t * bytes_read );
 
@@ -76,7 +79,7 @@ static const struct pci_system_methods linux_sysfs_methods = {
     .read_rom = pci_device_linux_sysfs_read_rom,
     .probe = pci_device_linux_sysfs_probe,
     .map_range = pci_device_linux_sysfs_map_range,
-    .unmap_range = pci_device_generic_unmap_range,
+    .unmap_range = pci_device_linux_sysfs_unmap_range,
 
     .read = pci_device_linux_sysfs_read,
     .write = pci_device_linux_sysfs_write,
@@ -369,7 +372,7 @@ pci_device_linux_sysfs_read( struct pci_device * dev, void * data,
     pciaddr_t temp_size = size;
     int err = 0;
     int fd;
-
+    char *data_bytes = data;
 
     if ( bytes_read != NULL ) {
 	*bytes_read = 0;
@@ -394,7 +397,7 @@ pci_device_linux_sysfs_read( struct pci_device * dev, void * data,
 
 
     while ( temp_size > 0 ) {
-	const ssize_t bytes = pread64( fd, data, temp_size, offset );
+	const ssize_t bytes = pread64( fd, data_bytes, temp_size, offset );
 
 	/* If zero bytes were read, then we assume it's the end of the
 	 * config file.
@@ -406,7 +409,7 @@ pci_device_linux_sysfs_read( struct pci_device * dev, void * data,
 
 	temp_size -= bytes;
 	offset += bytes;
-	data += bytes;
+	data_bytes += bytes;
     }
     
     if ( bytes_read != NULL ) {
@@ -427,7 +430,7 @@ pci_device_linux_sysfs_write( struct pci_device * dev, const void * data,
     pciaddr_t temp_size = size;
     int err = 0;
     int fd;
-
+    const char *data_bytes = data;
 
     if ( bytes_written != NULL ) {
 	*bytes_written = 0;
@@ -452,7 +455,7 @@ pci_device_linux_sysfs_write( struct pci_device * dev, const void * data,
 
 
     while ( temp_size > 0 ) {
-	const ssize_t bytes = pwrite64( fd, data, temp_size, offset );
+	const ssize_t bytes = pwrite64( fd, data_bytes, temp_size, offset );
 
 	/* If zero bytes were written, then we assume it's the end of the
 	 * config file.
@@ -464,7 +467,7 @@ pci_device_linux_sysfs_write( struct pci_device * dev, const void * data,
 
 	temp_size -= bytes;
 	offset += bytes;
-	data += bytes;
+	data_bytes += bytes;
     }
     
     if ( bytes_written != NULL ) {
@@ -541,8 +544,64 @@ pci_device_linux_sysfs_map_range(struct pci_device *dev,
         sentry.type = MTRR_TYPE_WRCOMB;
     }
 
-    if (pci_sys->mtrr_fd != -1) {
+    if (pci_sys->mtrr_fd != -1 && sentry.type != MTRR_TYPE_UNCACHABLE) {
 	if (ioctl(pci_sys->mtrr_fd, MTRRIOC_ADD_ENTRY, &sentry) < 0) {
+	    /* FIXME: Should we report an error in this case?
+	     */
+	    fprintf(stderr, "error setting MTRR "
+		    "(base = 0x%08lx, size = 0x%08x, type = %u) %s (%d)\n",
+		    sentry.base, sentry.size, sentry.type,
+		    strerror(errno), errno);
+/*            err = errno;*/
+	}
+    }
+#endif
+
+    return err;
+}
+
+/**
+ * Unmap a memory region for a device using the Linux sysfs interface.
+ * 
+ * \param dev   Device whose memory region is to be unmapped.
+ * \param map   Parameters of the mapping that is to be destroyed.
+ * 
+ * \return
+ * Zero on success or an \c errno value on failure.
+ *
+ * \sa pci_device_map_rrange, pci_device_linux_sysfs_map_range
+ *
+ * \todo
+ * Some older 2.6.x kernels don't implement the resourceN files.  On those
+ * systems /dev/mem must be used.  On these systems it is also possible that
+ * \c mmap64 may need to be used.
+ */
+static int
+pci_device_linux_sysfs_unmap_range(struct pci_device *dev,
+				   struct pci_device_mapping *map)
+{
+    int err = 0;
+#ifdef HAVE_MTRR
+    struct mtrr_sentry sentry = {
+	.base = map->base,
+        .size = map->size,
+	.type = MTRR_TYPE_UNCACHABLE
+    };
+#endif
+
+    err = pci_device_generic_unmap_range (dev, map);
+    if (err)
+	return err;
+    
+#ifdef HAVE_MTRR
+    if ((map->flags & PCI_DEV_MAP_FLAG_CACHABLE) != 0) {
+        sentry.type = MTRR_TYPE_WRBACK;
+    } else if ((map->flags & PCI_DEV_MAP_FLAG_WRITE_COMBINE) != 0) {
+        sentry.type = MTRR_TYPE_WRCOMB;
+    }
+
+    if (pci_sys->mtrr_fd != -1 && sentry.type != MTRR_TYPE_UNCACHABLE) {
+	if (ioctl(pci_sys->mtrr_fd, MTRRIOC_DEL_ENTRY, &sentry) < 0) {
 	    /* FIXME: Should we report an error in this case?
 	     */
 	    fprintf(stderr, "error setting MTRR "
