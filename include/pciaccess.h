@@ -33,6 +33,12 @@
 
 #include <inttypes.h>
 
+#if __GNUC__ >= 3
+#define __deprecated __attribute__((deprecated))
+#else
+#define __deprecated 
+#endif
+
 typedef uint64_t pciaddr_t;
 
 struct pci_device;
@@ -42,16 +48,23 @@ struct pci_slot_match;
 
 int pci_device_read_rom(struct pci_device *dev, void *buffer);
 
-int pci_device_map_region(struct pci_device *dev, unsigned region,
-    int write_enable);
+int  __deprecated pci_device_map_region(struct pci_device *dev,
+    unsigned region, int write_enable);
 
-int pci_device_unmap_region(struct pci_device *dev, unsigned region);
+int __deprecated pci_device_unmap_region(struct pci_device *dev,
+    unsigned region);
 
-int pci_device_map_memory_range(struct pci_device *dev, pciaddr_t base,
-    pciaddr_t size, int write_enable, void **addr);
+int pci_device_map_range(struct pci_device *dev, pciaddr_t base,
+    pciaddr_t size, unsigned map_flags, void **addr);
 
-int pci_device_unmap_memory_range(struct pci_device *dev, void *memory,
+int pci_device_unmap_range(struct pci_device *dev, void *memory,
     pciaddr_t size);
+
+int __deprecated pci_device_map_memory_range(struct pci_device *dev,
+    pciaddr_t base, pciaddr_t size, int write_enable, void **addr);
+
+int __deprecated pci_device_unmap_memory_range(struct pci_device *dev,
+    void *memory, pciaddr_t size);
 
 int pci_device_probe(struct pci_device *dev);
 
@@ -110,6 +123,16 @@ int pci_device_cfg_write_u32(struct pci_device *dev, uint32_t data,
     pciaddr_t offset);
 int pci_device_cfg_write_bits(struct pci_device *dev, uint32_t mask,
     uint32_t data, pciaddr_t offset);
+
+/**
+ * \name Mapping flags passed to \c pci_device_map_range
+ */
+/*@{*/
+#define PCI_DEV_MAP_FLAG_WRITABLE       (1U<<0)
+#define PCI_DEV_MAP_FLAG_WRITE_COMBINE  (1U<<1)
+#define PCI_DEV_MAP_FLAG_CACHABLE       (1U<<2)
+/*@}*/
+
 
 #define PCI_MATCH_ANY  (~0)
 
@@ -178,10 +201,35 @@ struct pci_slot_match {
 struct pci_mem_region {
     /**
      * When the region is mapped, this is the pointer to the memory.
+     *
+     * This field is \b only set when the deprecated \c pci_device_map_region
+     * interface is used.  Use \c pci_device_map_range instead.
+     *
+     * \deprecated
      */
     void *memory;
 
+
+    /**
+     * Base physical address of the region within its bus / domain.
+     *
+     * \warning
+     * This address is really only useful to other devices in the same
+     * domain.  It's probably \b not the address applications will ever
+     * use.
+     * 
+     * \warning
+     * Most (all?) platform back-ends leave this field unset.
+     */
     pciaddr_t bus_addr;
+
+
+    /**
+     * Base physical address of the region from the CPU's point of view.
+     * 
+     * This address is typically passed to \c pci_device_map_range to create
+     * a mapping of the region to the CPU's virtual address space.
+     */
     pciaddr_t base_addr;
 
 

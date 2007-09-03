@@ -26,7 +26,7 @@ AM_CFLAGS = @PCIACCESS_CFLAGS@
 lib_LTLIBRARIES = libpciaccess.la
 
 if LINUX
-OS_SUPPORT = linux_sysfs.c linux_devmem.c
+OS_SUPPORT = linux_sysfs.c linux_devmem.c linux_devmem.h
 endif
 
 if FREEBSD
@@ -43,6 +43,7 @@ libpciaccess_la_SOURCES = common_bridge.c \
 	common_interface.c \
 	common_capability.c \
 	common_device_name.c \
+	common_map.c \
 	pciaccess_private.h \
 	$(OS_SUPPORT)
 
@@ -50,7 +51,7 @@ INCLUDES = -I$(top_srcdir)/include
 
 libpciaccess_la_LIBADD = @PCIACCESS_LIBS@
 
-libpciaccess_la_LDFLAGS = -version-number 0:8:0 -no-undefined
+libpciaccess_la_LDFLAGS = -version-number 0:10:0 -no-undefined
 
 libpciaccessincludedir = $(includedir)
 libpciaccessinclude_HEADERS = \
