@@ -166,6 +166,34 @@ pci_device_map_region(struct pci_device * dev, unsigned region,
  * \param dev          Device whose memory region is to be mapped.
  * \param base         Base address of the range to be mapped.
  * \param size         Size of the range to be mapped.
+ * \param write_enable Map for writing (non-zero).
+ * \param addr         Location to store the mapped address.
+ * 
+ * \return
+ * Zero on success or an \c errno value on failure.
+ *
+ * \sa pci_device_map_range
+ */
+int pci_device_map_memory_range(struct pci_device *dev,
+				pciaddr_t base, pciaddr_t size,
+				int write_enable, void **addr)
+{
+    return pci_device_map_range(dev, base, size,
+				(write_enable) ? PCI_DEV_MAP_FLAG_WRITABLE : 0,
+				addr);
+}
+
+
+/**
+ * Map the specified memory range so that it can be accessed by the CPU.
+ *
+ * Maps the specified memory range for access by the processor.  The pointer
+ * to the mapped region is stored in \c addr.  In addtion, the
+ * \c pci_mem_region::memory pointer for the BAR will be updated.
+ *
+ * \param dev          Device whose memory region is to be mapped.
+ * \param base         Base address of the range to be mapped.
+ * \param size         Size of the range to be mapped.
  * \param map_flags    Flag bits controlling how the mapping is accessed.
  * \param addr         Location to store the mapped address.
  * 
