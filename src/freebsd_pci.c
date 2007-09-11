@@ -40,6 +40,7 @@
 #include <sys/types.h>
 #include <sys/pciio.h>
 #include <sys/mman.h>
+#include <sys/memrange.h>
 
 #include "pciaccess.h"
 #include "pciaccess_private.h"
@@ -80,11 +81,12 @@ pci_device_freebsd_map_range(struct pci_device *dev,
 {
     const int prot = ((map->flags & PCI_DEV_MAP_FLAG_WRITABLE) != 0) 
         ? (PROT_READ | PROT_WRITE) : PROT_READ;
-    const int open_flags = ((map->flags & PCI_DEV_MAP_FLAG_WRITABLE) != 0) 
-        ? O_RDWR : O_RDONLY;
+    struct mem_range_desc mrd;
+    struct mem_range_op mro;
+
     int fd, err = 0;
 
-    fd = open("/dev/mem", open_flags);
+    fd = open("/dev/mem", O_RDWR);
     if (fd == -1)
 	return errno;
 
@@ -94,9 +96,52 @@ pci_device_freebsd_map_range(struct pci_device *dev,
 	err = errno;
     }
 
+    mrd.mr_base = map->base;
+    mrd.mr_len = map->size;
+    strncpy(mrd.mr_owner, "pciaccess", sizeof(mrd.mr_owner));
+    if (map->flags & PCI_DEV_MAP_FLAG_CACHABLE)
+	mrd.mr_flags = MDF_WRITEBACK;
+    else if (map->flags & PCI_DEV_MAP_FLAG_WRITE_COMBINE)
+	mrd.mr_flags = MDF_WRITECOMBINE;
+    else
+	mrd.mr_flags = MDF_UNCACHEABLE;
+    mro.mo_desc = &mrd;
+    mro.mo_arg[0] = MEMRANGE_SET_UPDATE;
+
+    if (ioctl(fd, MEMRANGE_SET, &mro)) {
+	fprintf(stderr, "failed to set mtrr: %s\n", strerror(errno));
+    }
+
     close(fd);
 
     return err;
+}
+
+static void
+pci_device_freebsd_unmap_range( struct pci_device *dev,
+				struct pci_device_mapping *map )
+{
+    struct mem_range_desc mrd;
+    struct mem_range_op mro;
+    int fd;
+
+    fd = open("/dev/mem", O_RDWR);
+    if (fd != -1) {
+	mrd.mr_base = map->base;
+	mrd.mr_len = map->size;
+	strncpy(mrd.mr_owner, "pciaccess", sizeof(mrd.mr_owner));
+	mrd.mr_flags = MDF_UNCACHEABLE;
+	mro.mo_desc = &mrd;
+	mro.mo_arg[0] = MEMRANGE_SET_REMOVE;
+
+	if (ioctl(fd, MEMRANGE_SET, &mro)) {
+	    fprintf(stderr, "failed to unset mtrr: %s\n", strerror(errno));
+	}
+
+	close(fd);
+    }
+
+    pci_device_generic_unmap_range(dev, map);
 }
 
 static int
@@ -362,7 +407,7 @@ static const struct pci_system_methods freebsd_pci_methods = {
     .read_rom = pci_device_freebsd_read_rom,
     .probe = pci_device_freebsd_probe,
     .map_range = pci_device_freebsd_map_range,
-    .unmap_range = pci_device_generic_unmap_range,
+    .unmap_range = pci_device_freebsd_unmap_range,
     .read = pci_device_freebsd_read,
     .write = pci_device_freebsd_write,
     .fill_capabilities = pci_fill_capabilities_generic,
