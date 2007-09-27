@@ -80,6 +80,7 @@ case $host_os in
 		;;
 	*solaris*)
 		solaris=yes
+		PCIACCESS_LIBS="$PCIACCESS_LIBS -ldevinfo"
 		;;
 esac
 
