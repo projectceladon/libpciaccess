@@ -100,7 +100,8 @@ static int xsvc_fd = -1;
 #define	DEBUGON	0
 
 
-
+static int pci_device_solx_devfs_map_range(struct pci_device *dev,
+    struct pci_device_mapping *map);
 
 static int pci_device_solx_devfs_read_rom( struct pci_device * dev,
     void * buffer );
@@ -861,7 +862,7 @@ pci_device_solx_devfs_map_range(struct pci_device *dev,
 		}
 	}
 
-	map->memory = mmap(NULL, map->size, prot, MAP_SHARED, xsvs_fd,
+	map->memory = mmap(NULL, map->size, prot, MAP_SHARED, xsvc_fd,
 			   map->base);
 	if (map->memory == MAP_FAILED) {
 		err = errno;
