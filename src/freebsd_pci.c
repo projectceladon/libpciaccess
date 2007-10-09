@@ -120,7 +120,7 @@ pci_device_freebsd_map_range(struct pci_device *dev,
     return err;
 }
 
-static void
+static int
 pci_device_freebsd_unmap_range( struct pci_device *dev,
 				struct pci_device_mapping *map )
 {
@@ -144,7 +144,7 @@ pci_device_freebsd_unmap_range( struct pci_device *dev,
 	close(fd);
     }
 
-    pci_device_generic_unmap_range(dev, map);
+    return pci_device_generic_unmap_range(dev, map);
 }
 
 static int
