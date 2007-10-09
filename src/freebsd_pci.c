@@ -108,8 +108,11 @@ pci_device_freebsd_map_range(struct pci_device *dev,
     mro.mo_desc = &mrd;
     mro.mo_arg[0] = MEMRANGE_SET_UPDATE;
 
-    if (ioctl(fd, MEMRANGE_SET, &mro)) {
-	fprintf(stderr, "failed to set mtrr: %s\n", strerror(errno));
+    /* No need to set an MTRR if it's the default mode. */
+    if (mrd.mr_flags != MDF_UNCACHEABLE) {
+	if (ioctl(fd, MEMRANGE_SET, &mro)) {
+	    fprintf(stderr, "failed to set mtrr: %s\n", strerror(errno));
+	}
     }
 
     close(fd);
