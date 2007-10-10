@@ -38,9 +38,16 @@
 #include <fcntl.h>
 #include <errno.h>
 #include <sys/types.h>
+#include <sys/param.h>
 #include <sys/pciio.h>
 #include <sys/mman.h>
 #include <sys/memrange.h>
+
+#if __FreeBSD_version >= 700053
+#define DOMAIN_SUPPORT 1
+#else
+#define DOMAIN_SUPPORT 0
+#endif
 
 #include "pciaccess.h"
 #include "pciaccess_private.h"
@@ -154,6 +161,9 @@ pci_device_freebsd_read( struct pci_device * dev, void * data,
 {
     struct pci_io io;
 
+#if DOMAIN_SUPPORT
+    io.pi_sel.pc_domain = dev->domain;
+#endif
     io.pi_sel.pc_bus = dev->bus;
     io.pi_sel.pc_dev = dev->dev;
     io.pi_sel.pc_func = dev->func;
@@ -191,6 +201,9 @@ pci_device_freebsd_write( struct pci_device * dev, const void * data,
 {
     struct pci_io io;
 
+#if DOMAIN_SUPPORT
+    io.pi_sel.pc_domain = dev->domain;
+#endif
     io.pi_sel.pc_bus = dev->bus;
     io.pi_sel.pc_dev = dev->dev;
     io.pi_sel.pc_func = dev->func;
@@ -467,7 +480,11 @@ pci_system_freebsd_create( void )
     for ( i = 0; i < pciconfio.num_matches; i++ ) {
 	struct pci_conf *p = &pciconf[ i ];
 
-	pci_sys->devices[ i ].base.domain = 0; /* XXX */
+#if DOMAIN_SUPPORT
+	pci_sys->devices[ i ].base.domain = p->pc_sel.pc_domain;
+#else
+	pci_sys->devices[ i ].base.domain = 0;
+#endif
 	pci_sys->devices[ i ].base.bus = p->pc_sel.pc_bus;
 	pci_sys->devices[ i ].base.dev = p->pc_sel.pc_dev;
 	pci_sys->devices[ i ].base.func = p->pc_sel.pc_func;
