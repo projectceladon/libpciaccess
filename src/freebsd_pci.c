@@ -397,9 +397,10 @@ pci_device_freebsd_probe( struct pci_device * dev )
     bar = 0x10;
     for (i = 0; i < pci_device_freebsd_get_num_regions( dev ); i++) {
 	pci_device_freebsd_get_region_info( dev, i, bar );
-	if (dev->regions[i].is_64)
+	if (dev->regions[i].is_64) {
 	    bar += 0x08;
-	else
+	    i++;
+	} else
 	    bar += 0x04;
     }
 
