@@ -135,20 +135,26 @@ pci_device_freebsd_unmap_range( struct pci_device *dev,
     struct mem_range_op mro;
     int fd;
 
-    fd = open("/dev/mem", O_RDWR);
-    if (fd != -1) {
-	mrd.mr_base = map->base;
-	mrd.mr_len = map->size;
-	strncpy(mrd.mr_owner, "pciaccess", sizeof(mrd.mr_owner));
-	mrd.mr_flags = MDF_UNCACHEABLE;
-	mro.mo_desc = &mrd;
-	mro.mo_arg[0] = MEMRANGE_SET_REMOVE;
+    if ((map->flags & PCI_DEV_MAP_FLAG_CACHABLE) ||
+	(map->flags & PCI_DEV_MAP_FLAG_WRITE_COMBINE))
+    {
+	fd = open("/dev/mem", O_RDWR);
+	if (fd != -1) {
+	    mrd.mr_base = map->base;
+	    mrd.mr_len = map->size;
+	    strncpy(mrd.mr_owner, "pciaccess", sizeof(mrd.mr_owner));
+	    mrd.mr_flags = MDF_UNCACHEABLE;
+	    mro.mo_desc = &mrd;
+	    mro.mo_arg[0] = MEMRANGE_SET_REMOVE;
 
-	if (ioctl(fd, MEMRANGE_SET, &mro)) {
-	    fprintf(stderr, "failed to unset mtrr: %s\n", strerror(errno));
+	    if (ioctl(fd, MEMRANGE_SET, &mro)) {
+		fprintf(stderr, "failed to unset mtrr: %s\n", strerror(errno));
+	    }
+
+	    close(fd);
+	} else {
+	    fprintf(stderr, "Failed to open /dev/mem\n");
 	}
-
-	close(fd);
     }
 
     return pci_device_generic_unmap_range(dev, map);
