@@ -61,7 +61,10 @@ print_pci_device( struct pci_device * dev, int verbose )
 	dev_name = "Device unknown";
     }
 
-    printf("\npci bus 0x%04x cardnum 0x%02x function 0x%02x:"
+    printf("\npci ");
+    if (dev->domain != 0)
+	printf("domain 0x%04x ", dev->domain);
+    printf("bus 0x%04x cardnum 0x%02x function 0x%02x:"
 	   " vendor 0x%04x device 0x%04x\n",
 	   dev->bus, 
 	   dev->dev,
