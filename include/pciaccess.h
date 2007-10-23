@@ -368,13 +368,13 @@ struct pci_agp_info {
      */
     uint8_t    rates;
 
-    uint8_t    fast_writes:1;       /**< Are fast-writes supported? */
-    uint8_t    addr64:1;
-    uint8_t    htrans:1;
-    uint8_t    gart64:1;
-    uint8_t    coherent:1;
-    uint8_t    sideband:1;          /**< Is side-band addressing supported? */
-    uint8_t    isochronus:1;
+    unsigned int    fast_writes:1;  /**< Are fast-writes supported? */
+    unsigned int    addr64:1;
+    unsigned int    htrans:1;
+    unsigned int    gart64:1;
+    unsigned int    coherent:1;
+    unsigned int    sideband:1;     /**< Is side-band addressing supported? */
+    unsigned int    isochronus:1;
 
     uint8_t    async_req_size;
     uint8_t    calibration_cycle_timing;
