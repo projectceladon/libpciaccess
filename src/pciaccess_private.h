@@ -29,6 +29,13 @@
  * \author Ian Romanick <idr@us.ibm.com>
  */
 
+#if defined(__GNUC__) && (__GNUC__ >= 4)
+# define _pci_hidden      __attribute__((visibility("hidden")))
+#elif defined(__SUNPRO_C) && (__SUNPRO_C >= 0x550)
+# define _pci_hidden      __hidden
+#else /* not gcc >= 4 and not Sun Studio >= 8 */
+# define _pci_hidden
+#endif /* GNUC >= 4 */
 
 struct pci_device_mapping;
 

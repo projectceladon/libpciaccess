@@ -96,7 +96,7 @@ static int populate_entries(struct pci_system * pci_sys);
 /**
  * Attempt to access PCI subsystem using Linux's sysfs interface.
  */
-int
+_pci_hidden int
 pci_system_linux_sysfs_create( void )
 {
     int err = 0;

@@ -439,7 +439,7 @@ static const struct pci_system_methods freebsd_pci_methods = {
 /**
  * Attempt to access the FreeBSD PCI interface.
  */
-int
+_pci_hidden int
 pci_system_freebsd_create( void )
 {
     struct pci_conf_io pciconfio;

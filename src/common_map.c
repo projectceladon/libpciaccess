@@ -46,7 +46,7 @@
  *
  * \sa pci_device_unmap_range
  */
-int
+_pci_hidden int
 pci_device_generic_unmap_range(struct pci_device *dev,
 			       struct pci_device_mapping *map)
 {

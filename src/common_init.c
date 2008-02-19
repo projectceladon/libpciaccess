@@ -35,7 +35,7 @@
 #include "pciaccess.h"
 #include "pciaccess_private.h"
 
-struct pci_system * pci_sys;
+_pci_hidden struct pci_system * pci_sys;
 
 /**
  * Initialize the PCI subsystem for access.

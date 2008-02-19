@@ -61,7 +61,8 @@
  * Before using the VGA special case code, this function should check that
  * VGA access are routed to the device.  Right?
  */
-int pci_device_linux_devmem_read_rom(struct pci_device *dev, void *buffer)
+_pci_hidden int
+pci_device_linux_devmem_read_rom(struct pci_device *dev, void *buffer)
 {
     struct pci_device_private *priv = (struct pci_device_private *) dev;
     int fd;
