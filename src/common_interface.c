@@ -36,7 +36,7 @@
 #include "pciaccess.h"
 #include "pciaccess_private.h"
 
-#ifdef __linux__
+#if defined(__linux__) || defined(__GLIBC__)
 #include <byteswap.h>
 
 #if __BYTE_ORDER == __BIG_ENDIAN
