@@ -228,7 +228,7 @@ populate_vendor( struct pci_id_leaf * vend, int fill_device_data )
 		/* vendor_name may already be set from a previous invocation
 		 * of this function with fill_device_data = 0.
 		 */
-		if (vend->vendor_name != NULL) {
+		if (vend->vendor_name == NULL) {
 		    vend->vendor_name = strdup( & buf[ num_tabs + 6 ] );
 		}
 
