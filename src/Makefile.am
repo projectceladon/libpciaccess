@@ -34,7 +34,7 @@ OS_SUPPORT = freebsd_pci.c
 endif
 
 if SOLARIS
-OS_SUPPORT = solx_devfs.c
+OS_SUPPORT = solx_devfs.c pci_tools.h
 endif
 
 libpciaccess_la_SOURCES = common_bridge.c \
