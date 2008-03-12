@@ -64,6 +64,7 @@
  *
  * It is initialized once and used as a global, just as pci_system is used.
  */
+_pci_hidden
 struct freebsd_pci_system {
     /* This must be the first entry in the structure, as pci_system_cleanup()
      * frees pci_sys.
