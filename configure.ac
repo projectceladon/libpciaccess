@@ -77,6 +77,9 @@ case $host_os in
 	*linux*)
 		linux=yes
 		;;
+	*openbsd*)
+		openbsd=yes
+		;;
 	*solaris*)
 		solaris=yes
 		PCIACCESS_LIBS="$PCIACCESS_LIBS -ldevinfo"
@@ -85,6 +88,7 @@ esac
 
 AM_CONDITIONAL(LINUX, [test "x$linux" = xyes])
 AM_CONDITIONAL(FREEBSD, [test "x$freebsd" = xyes])
+AM_CONDITIONAL(OPENBSD, [test "x$openbsd" = xyes])
 AM_CONDITIONAL(SOLARIS, [test "x$solaris" = xyes])
 
 AC_CHECK_FILE([/usr/include/asm/mtrr.h],

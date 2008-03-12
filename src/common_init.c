@@ -56,13 +56,22 @@ pci_system_init( void )
     err = pci_system_linux_sysfs_create();
 #elif defined(__FreeBSD__)
     err = pci_system_freebsd_create();
+#elif defined(__OpenBSD__)
+    err = pci_system_openbsd_create();
 #elif defined(__sun)
-	err = pci_system_solx_devfs_create();
+    err = pci_system_solx_devfs_create();
 #endif
 
     return err;
 }
 
+void
+pci_system_init_dev_mem(int fd)
+{
+#ifdef __OpenBSD__
+    pci_system_openbsd_init_dev_mem(fd);
+#endif
+}
 
 /**
  * Shutdown all access to the PCI subsystem.

@@ -61,10 +61,16 @@
 
 #include <sys/endian.h>
 
-#define LETOH_16(x)	le16toh(x)
 #define HTOLE_16(x)	htole16(x)
-#define LETOH_32(x)	le32toh(x)
 #define HTOLE_32(x)	htole32(x)
+
+#ifdef __FreeBSD__
+#define LETOH_16(x)	le16toh(x)
+#define LETOH_32(x)	le32toh(x)
+#else
+#define LETOH_16(x)	letoh16(x)
+#define LETOH_32(x)	letoh32(x)
+#endif
 
 #endif /* others */
 

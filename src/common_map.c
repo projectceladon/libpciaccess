@@ -22,6 +22,7 @@
  * DEALINGS IN THE SOFTWARE.
  */
 
+#include <sys/types.h>
 #include <sys/mman.h>
 #include <errno.h>
 

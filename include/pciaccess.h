@@ -81,6 +81,8 @@ int pci_device_get_bridge_buses(struct pci_device *dev, int *primary_bus,
 
 int pci_system_init(void);
 
+void pci_system_init_dev_mem(int fd);
+
 void pci_system_cleanup(void);
 
 struct pci_device_iterator *pci_slot_match_iterator_create(

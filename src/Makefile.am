@@ -33,6 +33,10 @@ if FREEBSD
 OS_SUPPORT = freebsd_pci.c
 endif
 
+if OPENBSD
+OS_SUPPORT = openbsd_pci.c
+endif
+
 if SOLARIS
 OS_SUPPORT = solx_devfs.c pci_tools.h
 endif
