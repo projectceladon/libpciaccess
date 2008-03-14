@@ -307,6 +307,7 @@ pci_device_linux_sysfs_read_rom( struct pci_device * dev, void * buffer )
     int fd;
     struct stat  st;
     int err = 0;
+    size_t rom_size;
     size_t total_bytes;
 
 
@@ -331,6 +332,9 @@ pci_device_linux_sysfs_read_rom( struct pci_device * dev, void * buffer )
 	return errno;
     }
 
+    rom_size = st.st_size;
+    if ( rom_size == 0 )
+	rom_size = 0x10000;
 
     /* This is a quirky thing on Linux.  Even though the ROM and the file
      * for the ROM in sysfs are read-only, the string "1" must be written to
@@ -340,9 +344,9 @@ pci_device_linux_sysfs_read_rom( struct pci_device * dev, void * buffer )
     write( fd, "1", 1 );
     lseek( fd, 0, SEEK_SET );
 
-    for ( total_bytes = 0 ; total_bytes < st.st_size ; /* empty */ ) {
+    for ( total_bytes = 0 ; total_bytes < rom_size ; /* empty */ ) {
 	const int bytes = read( fd, (char *) buffer + total_bytes,
-				st.st_size - total_bytes );
+				rom_size - total_bytes );
 	if ( bytes == -1 ) {
 	    err = errno;
 	    break;

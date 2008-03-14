@@ -124,7 +124,7 @@ pci_device_linux_devmem_read_rom(struct pci_device *dev, void *buffer)
     else {
 	size_t bytes;
 
-	for (bytes = 0; bytes < priv->base.rom_size; /* empty */) {
+	for (bytes = 0; bytes < rom_size; /* empty */) {
 	    const ssize_t got = pread(fd, buffer, rom_size - bytes, 
 				      rom_base + bytes);
 	    if (got == -1) {
