@@ -71,7 +71,7 @@ if test "x$GCC" = "xyes"; then
 fi
 
 case $host_os in
-	*freebsd*)
+	*freebsd* | *dragonfly*)
 		freebsd=yes
 		;;
 	*linux*)
