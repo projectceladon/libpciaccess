@@ -558,6 +558,9 @@ pci_device_linux_sysfs_map_range(struct pci_device *dev,
 		    strerror(errno), errno);
 /*            err = errno;*/
 	}
+	/* KLUDGE ALERT -- rewrite the PTEs to turn off the CD and WT bits */
+	mprotect (map->memory, map->size, PROT_NONE);
+	mprotect (map->memory, map->size, PROT_READ|PROT_WRITE);
     }
 #endif
 
