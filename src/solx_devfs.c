@@ -108,12 +108,6 @@ static int pci_device_solx_devfs_read_rom( struct pci_device * dev,
 
 static int pci_device_solx_devfs_probe( struct pci_device * dev );
 
-static int pci_device_solx_devfs_map_region( struct pci_device * dev,
-    unsigned region, int write_enable );
-
-static int pci_device_solx_devfs_unmap_region( struct pci_device * dev,
-    unsigned region );
-
 static int pci_device_solx_devfs_read( struct pci_device * dev, void * data,
     pciaddr_t offset, pciaddr_t size, pciaddr_t * bytes_read );
 
@@ -600,7 +594,7 @@ pci_device_solx_devfs_probe( struct pci_device * dev )
 		 * using libdevinfo
 		 */
 		if ((rnode = di_init("/", DINFOCPYALL)) == DI_NODE_NIL) {
-			(void) fprintf(stderr, "di_init failed: $s\n",
+			(void) fprintf(stderr, "di_init failed: %s\n",
 			    strerror(errno));
 			err = errno;
 		} else {
@@ -759,7 +753,7 @@ pci_device_solx_devfs_read( struct pci_device * dev, void * data,
 		cfg_prg.offset = offset + i;
 		if ((err = ioctl(root_fd, PCITOOL_DEVICE_GET_REG,
 		    &cfg_prg)) != 0) {
-			fprintf(stderr, "read bdf<%x,%x,%x,%x> config space failure\n",
+			fprintf(stderr, "read bdf<%x,%x,%x,%llx> config space failure\n",
 			    cfg_prg.bus_no,
 			    cfg_prg.dev_no,
 			    cfg_prg.func_no,
@@ -867,7 +861,7 @@ pci_device_solx_devfs_map_range(struct pci_device *dev,
 	if (map->memory == MAP_FAILED) {
 		err = errno;
 
-		(void) fprintf(stderr, "map rom region =%x failed",
+		(void) fprintf(stderr, "map rom region =%llx failed",
 			       map->base);
 	}
 
