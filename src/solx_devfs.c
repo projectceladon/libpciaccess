@@ -852,7 +852,7 @@ pci_device_solx_devfs_map_range(struct pci_device *dev,
 {
 	const int prot = ((map->flags & PCI_DEV_MAP_FLAG_WRITABLE) != 0) 
 		? (PROT_READ | PROT_WRITE) : PROT_READ;
-	int err;
+	int err = 0;
 
 
 	if (xsvc_fd < 0) {
