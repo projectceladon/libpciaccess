@@ -114,6 +114,9 @@ pci_system_linux_sysfs_create( void )
 	pci_sys = calloc( 1, sizeof( struct pci_system ) );
 	if ( pci_sys != NULL ) {
 	    pci_sys->methods = & linux_sysfs_methods;
+#ifdef HAVE_MTRR
+	    pci_sys->mtrr_fd = open("/proc/mtrr", O_WRONLY);
+#endif
 	    err = populate_entries(pci_sys);
 	}
 	else {
@@ -123,10 +126,6 @@ pci_system_linux_sysfs_create( void )
     else {
 	err = errno;
     }
-
-#ifdef HAVE_MTRR
-    pci_sys->mtrr_fd = open("/proc/mtrr", O_WRONLY);
-#endif
 
     return err;
 }
