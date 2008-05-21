@@ -604,3 +604,14 @@ pci_device_cfg_write_bits( struct pci_device * dev, uint32_t mask,
 
     return err;
 }
+
+void
+pci_device_enable(struct pci_device *dev)
+{
+    if (dev == NULL) {
+	return;
+    }
+
+    if (pci_sys->methods->enable)
+	pci_sys->methods->enable(dev);
+}

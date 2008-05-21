@@ -55,6 +55,8 @@
 #include "pciaccess_private.h"
 #include "linux_devmem.h"
 
+static void pci_device_linux_sysfs_enable(struct pci_device *dev);
+
 static int pci_device_linux_sysfs_read_rom( struct pci_device * dev,
     void * buffer );
 
@@ -84,7 +86,8 @@ static const struct pci_system_methods linux_sysfs_methods = {
     .read = pci_device_linux_sysfs_read,
     .write = pci_device_linux_sysfs_write,
 
-    .fill_capabilities = pci_fill_capabilities_generic
+    .fill_capabilities = pci_fill_capabilities_generic,
+    .enable = pci_device_linux_sysfs_enable,
 };
 
 #define SYS_BUS_PCI "/sys/bus/pci/devices"
@@ -621,4 +624,24 @@ pci_device_linux_sysfs_unmap_range(struct pci_device *dev,
 #endif
 
     return err;
+}
+
+static void pci_device_linux_sysfs_enable(struct pci_device *dev)
+{
+    char name[256];
+    int fd;
+
+    snprintf( name, 255, "%s/%04x:%02x:%02x.%1u/enable",
+	      SYS_BUS_PCI,
+	      dev->domain,
+	      dev->bus,
+	      dev->dev,
+	      dev->func );
+    
+    fd = open( name, O_RDWR );
+    if (fd == -1)
+       return;
+
+    write( fd, "1", 1 );
+    close(fd);
 }

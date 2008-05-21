@@ -59,6 +59,7 @@ struct pci_system_methods {
 		pciaddr_t size, pciaddr_t * bytes_written );
 
     int (*fill_capabilities)( struct pci_device * dev );
+    void (*enable)( struct pci_device *dev );
 };
 
 struct pci_device_mapping {
