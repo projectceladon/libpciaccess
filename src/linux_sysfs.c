@@ -537,11 +537,10 @@ pci_device_linux_sysfs_map_range(struct pci_device *dev,
 
     map->memory = mmap(NULL, map->size, prot, MAP_SHARED, fd, offset);
     if (map->memory == MAP_FAILED) {
-        err = errno;
         map->memory = NULL;
+	close(fd);
+	return errno;
     }
-
-    close(fd);
 
 #ifdef HAVE_MTRR
     if ((map->flags & PCI_DEV_MAP_FLAG_CACHABLE) != 0) {
@@ -562,11 +561,27 @@ pci_device_linux_sysfs_map_range(struct pci_device *dev,
 	}
 	/* KLUDGE ALERT -- rewrite the PTEs to turn off the CD and WT bits */
 	mprotect (map->memory, map->size, PROT_NONE);
-	mprotect (map->memory, map->size, PROT_READ|PROT_WRITE);
+	err = mprotect (map->memory, map->size, PROT_READ|PROT_WRITE);
+
+	if (err != 0) {
+	    fprintf(stderr, "mprotect(PROT_READ | PROT_WRITE) failed: %s\n",
+		    strerror(errno));
+	    fprintf(stderr, "remapping without mprotect performace kludge.\n");
+
+	    munmap(map->memory, map->size);
+	    map->memory = mmap(NULL, map->size, prot, MAP_SHARED, fd, offset);
+	    if (map->memory == MAP_FAILED) {
+		map->memory = NULL;
+		close(fd);
+		return errno;
+	    }
+	}
     }
 #endif
 
-    return err;
+    close(fd);
+
+    return 0;
 }
 
 /**
