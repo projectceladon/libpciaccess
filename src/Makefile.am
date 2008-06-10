@@ -55,7 +55,7 @@ INCLUDES = -I$(top_srcdir)/include
 
 libpciaccess_la_LIBADD = @PCIACCESS_LIBS@
 
-libpciaccess_la_LDFLAGS = -version-number 0:10:1 -no-undefined
+libpciaccess_la_LDFLAGS = -version-number 0:10:2 -no-undefined
 
 libpciaccessincludedir = $(includedir)
 libpciaccessinclude_HEADERS = \
