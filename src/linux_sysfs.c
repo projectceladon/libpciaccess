@@ -566,7 +566,7 @@ pci_device_linux_sysfs_map_range(struct pci_device *dev,
 	if (err != 0) {
 	    fprintf(stderr, "mprotect(PROT_READ | PROT_WRITE) failed: %s\n",
 		    strerror(errno));
-	    fprintf(stderr, "remapping without mprotect performace kludge.\n");
+	    fprintf(stderr, "remapping without mprotect performance kludge.\n");
 
 	    munmap(map->memory, map->size);
 	    map->memory = mmap(NULL, map->size, prot, MAP_SHARED, fd, offset);
