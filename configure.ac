@@ -59,6 +59,19 @@ AC_ARG_WITH(pciids-path,
 	[PCIIDS_PATH="$DEFAULT_PCIIDS_PATH"])
 AC_DEFINE_DIR(PCIIDS_PATH, PCIIDS_PATH, [Path to pci.ids])
 
+AC_ARG_WITH(zlib,
+	AS_HELP_STRING([--with-zlib], [Enable zlib support to read gzip compressed pci.ids]),
+	[use_zlib="yes"],
+	[use_zlib="no"])
+if test "x$use_zlib" = xyes; then
+	AC_CHECK_LIB(z, gzopen,
+	[PCIACCESS_LIBS="$PCIACCESS_LIBS -lz"],
+	[AC_MSG_ERROR(Check for zlib library failed)])
+	AC_CHECK_HEADER([zlib.h],
+	[AC_DEFINE(HAVE_ZLIB, 1, [Use zlib to read gzip compressed pci.ids])],
+	[AC_MSG_ERROR(Check for zlib.h header file failed)])
+fi
+
 if test "x$GCC" = "xyes"; then
        GCC_WARNINGS1="-Wall -Wpointer-arith -Wstrict-prototypes"
        GCC_WARNINGS2="-Wmissing-prototypes -Wmissing-declarations"
