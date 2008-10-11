@@ -90,6 +90,17 @@ case $host_os in
 	*linux*)
 		linux=yes
 		;;
+	*netbsd*)
+		case $host in
+		*i386*)
+			PCIACCESS_LIBS="-li386"
+			;;
+		*x86_64*|*amd64*)
+			PCIACCESS_LIBS="-lx86_64"
+			;;
+		esac
+		netbsd=yes
+		;;
 	*openbsd*)
 		openbsd=yes
 		;;
@@ -101,6 +112,7 @@ esac
 
 AM_CONDITIONAL(LINUX, [test "x$linux" = xyes])
 AM_CONDITIONAL(FREEBSD, [test "x$freebsd" = xyes])
+AM_CONDITIONAL(NETBSD, [test "x$netbsd" = xyes])
 AM_CONDITIONAL(OPENBSD, [test "x$openbsd" = xyes])
 AM_CONDITIONAL(SOLARIS, [test "x$solaris" = xyes])
 
