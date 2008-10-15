@@ -26,7 +26,7 @@
  * \file linux_sysfs.c
  * Access PCI subsystem using Linux's sysfs interface.  This interface is
  * available starting somewhere in the late 2.5.x kernel phase, and is the
- * prefered method on all 2.6.x kernels.
+ * preferred method on all 2.6.x kernels.
  *
  * \author Ian Romanick <idr@us.ibm.com>
  */
@@ -73,7 +73,7 @@ static int pci_device_linux_sysfs_read( struct pci_device * dev, void * data,
 
 static int pci_device_linux_sysfs_write( struct pci_device * dev,
     const void * data, pciaddr_t offset, pciaddr_t size,
-    pciaddr_t * bytes_wrtten );
+    pciaddr_t * bytes_written );
 
 static const struct pci_system_methods linux_sysfs_methods = {
     .destroy = NULL,

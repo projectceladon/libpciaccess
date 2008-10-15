@@ -184,7 +184,7 @@ typedef struct pcitool_intr_get {
 #define	PCITOOL_ACC_IS_BIG_ENDIAN(x)	(x & PCITOOL_ACC_ATTR_ENDN_BIG)
 
 /*
- * Data stucture to read and write to pci device registers.
+ * Data structure to read and write to pci device registers.
  * This is the argument to the following ioctls:
  *	PCITOOL_DEVICE_SET/GET_REG
  *	PCITOOL_NEXUS_SET/GET_REG

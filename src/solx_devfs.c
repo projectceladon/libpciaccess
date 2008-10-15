@@ -113,7 +113,7 @@ static int pci_device_solx_devfs_read( struct pci_device * dev, void * data,
 
 static int pci_device_solx_devfs_write( struct pci_device * dev,
     const void * data, pciaddr_t offset, pciaddr_t size,
-    pciaddr_t * bytes_wrtten );
+    pciaddr_t * bytes_written );
 
 static int
 probe_dev(int fd, pcitool_reg_t *prg_p, struct pci_system *pci_sys);
@@ -149,7 +149,7 @@ static const struct pci_system_methods solx_devfs_methods = {
 };
 
 /*
- * Rlease all the resources
+ * Release all the resources
  * Solaris version
  */
 static void
@@ -351,7 +351,7 @@ probe_dev(int fd, pcitool_reg_t *prg_p, struct pci_system *pci_sys)
 
 		/*
 		 * Data came back as 0.
-		 * Treat as unresponsive device amd check next device.
+		 * Treat as unresponsive device and check next device.
 		 */
 		} else if (prg_p->data == 0) {
 			rval = 0;
@@ -379,7 +379,7 @@ probe_dev(int fd, pcitool_reg_t *prg_p, struct pci_system *pci_sys)
 			}
 
 			/*
-			 * Found one device with bus numer, device number and
+			 * Found one device with bus number, device number and
 			 * function number.
 			 */
 
@@ -417,7 +417,7 @@ probe_dev(int fd, pcitool_reg_t *prg_p, struct pci_system *pci_sys)
 			pci_sys->num_devices++;
 
 			/*
-			 * Accomodate devices which state their
+			 * Accommodate devices which state their
 			 * multi-functionality only in their function 0 config
 			 * space.  Note multi-functionality throughout probing
 			 * of all of this device's functions.
@@ -486,7 +486,7 @@ do_probe(int fd, struct pci_system *pci_sys)
 		}
 	}
 	if (pci_sys->num_devices > MAX_DEVICES) {
-		(void) fprintf(stderr, "pci devices reach maximu number\n");
+		(void) fprintf(stderr, "pci devices reach maximum number\n");
 	}
 
 	return (rval);
@@ -505,7 +505,7 @@ find_target_node(di_node_t node, void *arg)
 	devnode = (i_devnode_t *)arg;
 
 	/*
-	 * Test the property funtions, only for testing
+	 * Test the property functions, only for testing
 	 */
 	/*
 	(void) fprintf(stderr, "start of node 0x%x\n", node->nodeid);
