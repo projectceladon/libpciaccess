@@ -183,7 +183,7 @@ pci_system_solx_devfs_create( void )
 
 	if (root_fd >= 0)
 		return (err);
-	/* If the directory "/sys/bus/pci/devices" exists,
+	/* If the PCI nexus device "/devices/pci@0,0:reg" exists,
 	 * then the PCI subsystem can be accessed using
 	 * this interface.
 	 */
