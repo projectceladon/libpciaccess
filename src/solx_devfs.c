@@ -53,8 +53,6 @@
  * Solaris devfs interfaces
  */
 
-#define _GNU_SOURCE
-
 #include <stdlib.h>
 #include <strings.h>
 #include <stdio.h>
@@ -73,7 +71,6 @@
 #include "pciaccess.h"
 #include "pciaccess_private.h"
 
-#define	PCI_NEXUS_1	"/devices/pci@0,0:reg"
 #define	MAX_DEVICES	256
 #define	CELL_NUMS_1275		(sizeof(pci_regspec_t)/sizeof(uint_t))
 typedef union {
@@ -86,9 +83,16 @@ typedef struct i_devnode {
 	uint8_t dev;
 	uint8_t func;
 	di_node_t node;
-}i_devnode_t;
+} i_devnode_t;
 
-static int root_fd = -1;
+typedef struct nexus {
+	int fd;
+	int domain;
+	struct nexus *next;
+} nexus_t;
+
+static nexus_t *nexus_list = NULL;
+static int num_domains = 0;
 static int xsvc_fd = -1;
 /*
  * Read config space in native processor endianness.  Endian-neutral
@@ -143,10 +147,13 @@ static int pci_device_solx_devfs_write( struct pci_device * dev,
     pciaddr_t * bytes_written );
 
 static int
-probe_dev(int fd, pcitool_reg_t *prg_p, struct pci_system *pci_sys);
+probe_dev(nexus_t *nexus, pcitool_reg_t *prg_p, struct pci_system *pci_sys);
 
 static int
-do_probe(int fd, struct pci_system *pci_sys);
+do_probe(nexus_t *nexus, struct pci_system *pci_sys);
+
+static int 
+probe_nexus_node(di_node_t di_node, di_minor_t minor, void *arg);
 
 static void
 pci_system_solx_devfs_destroy( void );
@@ -175,6 +182,39 @@ static const struct pci_system_methods solx_devfs_methods = {
     .fill_capabilities = pci_fill_capabilities_generic
 };
 
+static nexus_t *
+find_nexus_for_domain( int domain )
+{
+	nexus_t *nexus;
+
+	for (nexus = nexus_list ; nexus != NULL ; nexus = nexus->next) {
+		if (nexus->domain == domain) {
+			return nexus;
+		}
+	}
+	return NULL;
+}
+
+static uint32_t
+get_config_hdr_value(pci_conf_hdr_t *config_hdr_p, uint16_t offset,
+		     uint8_t size)
+{
+	uint32_t value = 0;
+
+	while (size-- > 0) { 
+		value = (value << 8) + config_hdr_p->bytes[offset + size]; 
+	} 
+
+	return value;
+}
+
+#define GET_CONFIG_VAL_8(offset) \
+	(config_hdr.bytes[offset])
+#define GET_CONFIG_VAL_16(offset) \
+	(uint16_t)get_config_hdr_value(&config_hdr, offset, 2)
+#define GET_CONFIG_VAL_32(offset) \
+	(uint32_t)get_config_hdr_value(&config_hdr, offset, 4)
+
 /*
  * Release all the resources
  * Solaris version
@@ -187,17 +227,21 @@ pci_system_solx_devfs_destroy( void )
 	 * will be freed in pci_system_init
 	 * It is more reasonable to free them here
 	 */
-	if (root_fd >= 0) {
-		close(root_fd);
-		root_fd = -1;
+	nexus_t *nexus, *next;
+	for (nexus = nexus_list ; nexus != NULL ; nexus = next) {
+		next = nexus->next;
+		close(nexus->fd);
+		free(nexus);
 	}
-
+	nexus_list = NULL;
+	
 	if (xsvc_fd >= 0) {
 		close(xsvc_fd);
 		xsvc_fd = -1;
 	}
 
 }
+
 /*
  * Attempt to access PCI subsystem using Solaris's devfs interface.
  * Solaris version
@@ -206,45 +250,50 @@ int
 pci_system_solx_devfs_create( void )
 {
 	int err = 0;
+	di_node_t di_node; 
 
 
-	if (root_fd >= 0)
-		return (err);
-	/* If the PCI nexus device "/devices/pci@0,0:reg" exists,
-	 * then the PCI subsystem can be accessed using
-	 * this interface.
+	if (nexus_list != NULL) {
+		return 0;
+	}
+
+	/*
+	 * Only allow MAX_DEVICES exists
+	 * I will fix it later to get
+	 * the total devices first
 	 */
-   	if ((root_fd = open(PCI_NEXUS_1, O_RDWR)) == -1) {
-		(void) fprintf(stderr,
-		    "Could not open nexus node %s: %s\n",
-		    PCI_NEXUS_1, strerror(errno));
-
-			err = errno;
-
-			return (err);
-	} else {
-		/*
-		 * Only allow MAX_DEVICES exists
-		 * I will fix it later to get
-		 * the total devices first
-		 */
-		if ((pci_sys = calloc(1, sizeof (struct pci_system))) != NULL) {
-			pci_sys->methods = &solx_devfs_methods;
-			if ((pci_sys->devices =
-			    calloc(MAX_DEVICES,
-			    sizeof (struct pci_device_private))) != NULL) {
-				(void) do_probe(root_fd, pci_sys);
-			}
-			else {
+	if ((pci_sys = calloc(1, sizeof (struct pci_system))) != NULL) {
+		pci_sys->methods = &solx_devfs_methods;
+		if ((pci_sys->devices =
+		     calloc(MAX_DEVICES, sizeof (struct pci_device_private)))
+		    != NULL) {
+			if ((di_node = di_init("/", DINFOCPYALL))
+			    == DI_NODE_NIL) { 
 				err = errno;
-				free(pci_sys);
-				pci_sys = NULL;
+				(void) fprintf(stderr,
+					       "di_init() failed: %s\n", 
+					       strerror(errno)); 
+			} else {
+				(void) di_walk_minor(di_node, DDI_NT_REGACC,
+						     0, pci_sys,
+						     probe_nexus_node);
+				di_fini(di_node); 
 			}
-		} else {
+		}
+		else {
 			err = errno;
 		}
-		
+	} else {
+		err = errno;
 	}
+
+	if (err != 0) {
+		if (pci_sys != NULL) {
+			free(pci_sys->devices);
+			free(pci_sys);
+			pci_sys = NULL;
+		}
+	}		
 	
 	return (err);
 }
@@ -288,7 +337,7 @@ get_config_header(int fd, uint8_t bus_no, uint8_t dev_no, uint8_t func_no,
  * Probe device's functions.  Modifies many fields in the prg_p.
  */
 static int
-probe_dev(int fd, pcitool_reg_t *prg_p, struct pci_system *pci_sys)
+probe_dev(nexus_t *nexus, pcitool_reg_t *prg_p, struct pci_system *pci_sys)
 {
 	pci_conf_hdr_t	config_hdr;
 	boolean_t	multi_function_device;
@@ -296,7 +345,7 @@ probe_dev(int fd, pcitool_reg_t *prg_p, struct pci_system *pci_sys)
 	int8_t		first_func = 0;
 	int8_t		last_func = PCI_REG_FUNC_M >> PCI_REG_FUNC_SHIFT;
 	int		rval = 0;
-
+	struct pci_device *pci_base;
 
 	/*
 	 * Loop through at least func=first_func.  Continue looping through
@@ -334,7 +383,7 @@ probe_dev(int fd, pcitool_reg_t *prg_p, struct pci_system *pci_sys)
 		prg_p->offset = 0;
 		prg_p->data = 0;
 		prg_p->user_version = PCITOOL_USER_VERSION;
-		if (((rval = ioctl(fd, PCITOOL_DEVICE_GET_REG, prg_p)) != 0) ||
+		if (((rval = ioctl(nexus->fd, PCITOOL_DEVICE_GET_REG, prg_p)) != 0) ||
 		    (prg_p->data == 0xffffffff)) {
 
 			/*
@@ -389,7 +438,7 @@ probe_dev(int fd, pcitool_reg_t *prg_p, struct pci_system *pci_sys)
 			config_hdr.dwords[0] = (uint32_t)prg_p->data;
 
 			/* Get the rest of the PCI header. */
-			if ((rval = get_config_header(fd, prg_p->bus_no,
+			if ((rval = get_config_header(nexus->fd, prg_p->bus_no,
 			    prg_p->dev_no, prg_p->func_no, &config_hdr)) !=
 			    0) {
 				break;
@@ -410,32 +459,36 @@ probe_dev(int fd, pcitool_reg_t *prg_p, struct pci_system *pci_sys)
 			 * function number.
 			 */
 
+			pci_base =
+				&pci_sys->devices[pci_sys->num_devices].base;
+			
 			/*
 			 * Domain is peer bus??
 			 */
-			pci_sys->devices[pci_sys->num_devices].base.domain = 0;
-			pci_sys->devices[pci_sys->num_devices].base.bus =
-			    prg_p->bus_no;
-			pci_sys->devices[pci_sys->num_devices].base.dev =
-			    prg_p->dev_no;
-			pci_sys->devices[pci_sys->num_devices].base.func = func;
+			pci_base->domain = nexus->domain;
+			pci_base->bus = prg_p->bus_no;
+			pci_base->dev = prg_p->dev_no;
+			pci_base->func = func;
 			/*
 			 * for the format of device_class, see struct pci_device;
 			 */
-			pci_sys->devices[pci_sys->num_devices].base.device_class =
-			    config_hdr.dwords[2]>>8;
-			pci_sys->devices[pci_sys->num_devices].base.revision =
-			    (uint8_t)(config_hdr.dwords[2] & 0xff);
-			pci_sys->devices[pci_sys->num_devices].base.vendor_id =
-			    (uint16_t)(config_hdr.dwords[0] & 0xffff);		
-			pci_sys->devices[pci_sys->num_devices].base.device_id =
-			    (uint16_t)((config_hdr.dwords[0]>>16) & 0xffff);		
-			pci_sys->devices[pci_sys->num_devices].base.subvendor_id =
-			    (uint16_t)(config_hdr.dwords[11] & 0xffff);		
-			pci_sys->devices[pci_sys->num_devices].base.subdevice_id =
-			    (uint16_t)((config_hdr.dwords[11]>>16) & 0xffff);		
+			pci_base->device_class =
+				(GET_CONFIG_VAL_8(PCI_CONF_BASCLASS) << 16) |
+				(GET_CONFIG_VAL_8(PCI_CONF_SUBCLASS) << 8) |
+				GET_CONFIG_VAL_8(PCI_CONF_PROGCLASS);
+			pci_base->revision =
+				GET_CONFIG_VAL_8(PCI_CONF_REVID);
+			pci_base->vendor_id =
+				GET_CONFIG_VAL_16(PCI_CONF_VENID);
+			pci_base->device_id =
+				GET_CONFIG_VAL_16(PCI_CONF_DEVID);
+			pci_base->subvendor_id =
+				GET_CONFIG_VAL_16(PCI_CONF_SUBVENID);
+			pci_base->subdevice_id =
+				GET_CONFIG_VAL_16(PCI_CONF_SUBSYSID);
+
 			pci_sys->devices[pci_sys->num_devices].header_type =
-			    (uint8_t)(((config_hdr.dwords[3])&0xff0000)>>16);
+				GET_CONFIG_VAL_8(PCI_CONF_HEADER);
 #if DEBUGON
 			fprintf(stderr, "busno = %x, devno = %x, funcno = %x\n",
 			    prg_p->bus_no, prg_p->dev_no, func);
@@ -459,6 +512,59 @@ probe_dev(int fd, pcitool_reg_t *prg_p, struct pci_system *pci_sys)
 	return (rval);
 }
 
+/* 
+ * This function is called from di_walk_minor() when any PROBE is processed 
+ */ 
+static int 
+probe_nexus_node(di_node_t di_node, di_minor_t minor, void *arg) 
+{
+	struct pci_system *pci_sys = (struct pci_system *) arg;
+	char *nexus_name;
+	nexus_t *nexus;
+	int fd;
+	char nexus_path[MAXPATHLEN];
+
+	nexus = calloc(1, sizeof(nexus_t));
+	if (nexus == NULL) {
+		(void) fprintf(stderr,
+			       "Error allocating memory for nexus: %s\n",
+			       strerror(errno));
+		return DI_WALK_TERMINATE;
+	}
+	
+	nexus_name = di_devfs_minor_path(minor);
+	if (nexus_name == NULL) {
+		(void) fprintf(stderr, "Error getting nexus path: %s\n",
+			       strerror(errno));
+		free(nexus);
+		return (DI_WALK_CONTINUE);
+	}
+
+	snprintf(nexus_path, sizeof(nexus_path), "/devices%s", nexus_name);
+
+	if ((fd = open(nexus_path, O_RDWR)) >= 0) {
+		nexus->fd = fd;
+		nexus->domain = num_domains++;
+		if ((do_probe(nexus, pci_sys) != 0) && (errno != ENXIO)) {
+			(void) fprintf(stderr, "Error probing node %s: %s\n",
+				       nexus_path, strerror(errno));
+			(void) close(fd);
+			free(nexus);
+		} else {
+			nexus->next = nexus_list;
+			nexus_list = nexus;
+		}
+	} else {
+		(void) fprintf(stderr, "Error opening %s: %s\n",
+				       nexus_path, strerror(errno));
+		free(nexus);
+	}
+	di_devfs_path_free(nexus_name);
+
+	return DI_WALK_CONTINUE;
+}
+
+
 /*
  * Solaris version
  * Probe a given nexus config space for devices.
@@ -467,7 +573,7 @@ probe_dev(int fd, pcitool_reg_t *prg_p, struct pci_system *pci_sys)
  * input_args contains commandline options as specified by the user.
  */
 static int
-do_probe(int fd, struct pci_system *pci_sys)
+do_probe(nexus_t *nexus, struct pci_system *pci_sys)
 {
 	pcitool_reg_t prg;
 	uint32_t bus;
@@ -501,7 +607,7 @@ do_probe(int fd, struct pci_system *pci_sys)
 		for (dev = first_dev;
 		    ((dev <= last_dev) && (rval == 0)); dev++) {
 			prg.dev_no = dev;
-			rval = probe_dev(fd, &prg, pci_sys);
+			rval = probe_dev(nexus, &prg, pci_sys);
 		}
 
 		/*
@@ -765,6 +871,13 @@ pci_device_solx_devfs_read( struct pci_device * dev, void * data,
 	pcitool_reg_t cfg_prg;
 	int err = 0;
 	int i = 0;
+	nexus_t *nexus = find_nexus_for_domain(dev->domain);
+	
+	*bytes_read = 0;
+
+	if ( nexus == NULL ) {
+		return ENODEV;
+	}
 
 	cfg_prg.offset = offset;
 	cfg_prg.acc_attr = PCITOOL_ACC_ATTR_SIZE_1 + NATIVE_ENDIAN;
@@ -773,12 +886,11 @@ pci_device_solx_devfs_read( struct pci_device * dev, void * data,
 	cfg_prg.func_no = dev->func;
 	cfg_prg.barnum = 0;
 	cfg_prg.user_version = PCITOOL_USER_VERSION;
-	*bytes_read = 0;
 
 	for (i = 0; i < size; i = i + PCITOOL_ACC_ATTR_SIZE(PCITOOL_ACC_ATTR_SIZE_1)) {
 
 		cfg_prg.offset = offset + i;
-		if ((err = ioctl(root_fd, PCITOOL_DEVICE_GET_REG,
+		if ((err = ioctl(nexus->fd, PCITOOL_DEVICE_GET_REG,
 		    &cfg_prg)) != 0) {
 			fprintf(stderr, "read bdf<%x,%x,%x,%llx> config space failure\n",
 			    cfg_prg.bus_no,
@@ -810,12 +922,16 @@ pci_device_solx_devfs_write( struct pci_device * dev, const void * data,
 	pcitool_reg_t cfg_prg;
 	int err = 0;
 	int cmd;
-
+	nexus_t *nexus = find_nexus_for_domain(dev->domain);
 
 	if ( bytes_written != NULL ) {
 		*bytes_written = 0;
 	}
 
+	if ( nexus == NULL ) {
+		return ENODEV;
+	}
+	
 	cfg_prg.offset = offset;
 	switch (size) {
 		case 1:
@@ -849,7 +965,7 @@ pci_device_solx_devfs_write( struct pci_device * dev, const void * data,
 	 */
 	cmd = PCITOOL_DEVICE_SET_REG;
 
-	if ((err = ioctl(root_fd, cmd, &cfg_prg)) != 0) {
+	if ((err = ioctl(nexus->fd, cmd, &cfg_prg)) != 0) {
 		return (err);
 	}
 	*bytes_written = size;
