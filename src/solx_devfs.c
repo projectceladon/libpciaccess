@@ -58,13 +58,10 @@
 #include <stdio.h>
 #include <unistd.h>
 #include <sys/types.h>
-#include <sys/stat.h>
 #include <fcntl.h>
 #include <sys/mman.h>
-#include <dirent.h>
 #include <errno.h>
 #include <sys/pci.h>
-#include <assert.h>
 #include <libdevinfo.h>
 #include "pci_tools.h"
 
@@ -72,7 +69,7 @@
 #include "pciaccess_private.h"
 
 #define	MAX_DEVICES	256
-#define	CELL_NUMS_1275		(sizeof(pci_regspec_t)/sizeof(uint_t))
+#define	CELL_NUMS_1275	(sizeof(pci_regspec_t) / sizeof(uint_t))
 
 typedef union {
     uint8_t bytes[16 * sizeof (uint32_t)];
@@ -189,25 +186,14 @@ find_nexus_for_domain( int domain )
     return NULL;
 }
 
-static uint32_t
-get_config_hdr_value(pci_conf_hdr_t *config_hdr_p, uint16_t offset,
-		     uint8_t size)
-{
-    uint32_t value = 0;
-
-    while (size-- > 0) {
-	value = (value << 8) + config_hdr_p->bytes[offset + size];
-    }
-
-    return value;
-}
-
-#define GET_CONFIG_VAL_8(offset) \
-	(config_hdr.bytes[offset])
+#define GET_CONFIG_VAL_8(offset) (config_hdr.bytes[offset])
 #define GET_CONFIG_VAL_16(offset) \
-	(uint16_t)get_config_hdr_value(&config_hdr, offset, 2)
+    (uint16_t) (GET_CONFIG_VAL_8(offset) + (GET_CONFIG_VAL_8(offset+1) << 8))
 #define GET_CONFIG_VAL_32(offset) \
-	(uint32_t)get_config_hdr_value(&config_hdr, offset, 4)
+    (uint32_t) (GET_CONFIG_VAL_8(offset) + 		\
+		(GET_CONFIG_VAL_8(offset+1) << 8) +	\
+		(GET_CONFIG_VAL_8(offset+2) << 16) +	\
+		(GET_CONFIG_VAL_8(offset+3) << 24))
 
 /*
  * Release all the resources
@@ -217,9 +203,9 @@ static void
 pci_system_solx_devfs_destroy( void )
 {
     /*
-     * the memory allocated in create routines
-     * will be freed in pci_system_init
-     * It is more reasonable to free them here
+     * The memory allocated for pci_sys & devices in create routines
+     * will be freed in pci_system_cleanup.
+     * Need to free system-specific allocations here.
      */
     nexus_t *nexus, *next;
 
@@ -240,7 +226,7 @@ pci_system_solx_devfs_destroy( void )
  * Attempt to access PCI subsystem using Solaris's devfs interface.
  * Solaris version
  */
-int
+_pci_hidden int
 pci_system_solx_devfs_create( void )
 {
     int err = 0;
@@ -258,11 +244,12 @@ pci_system_solx_devfs_create( void )
      */
     if ((pci_sys = calloc(1, sizeof (struct pci_system))) != NULL) {
 	pci_sys->methods = &solx_devfs_methods;
+
 	if ((pci_sys->devices =
 	     calloc(MAX_DEVICES, sizeof (struct pci_device_private)))
 	    != NULL) {
-	    if ((di_node = di_init("/", DINFOCPYALL))
-		== DI_NODE_NIL) {
+
+	    if ((di_node = di_init("/", DINFOCPYALL)) == DI_NODE_NIL) {
 		err = errno;
 		(void) fprintf(stderr, "di_init() failed: %s\n",
 			       strerror(errno));
@@ -374,6 +361,7 @@ probe_dev(nexus_t *nexus, pcitool_reg_t *prg_p, struct pci_system *pci_sys)
 	prg_p->data = 0;
 	prg_p->user_version = PCITOOL_USER_VERSION;
 
+	errno = 0;
 	if (((rval = ioctl(nexus->fd, PCITOOL_DEVICE_GET_REG, prg_p)) != 0) ||
 	    (prg_p->data == 0xffffffff)) {
 
@@ -528,6 +516,7 @@ probe_nexus_node(di_node_t di_node, di_minor_t minor, void *arg)
     }
 
     snprintf(nexus_path, sizeof(nexus_path), "/devices%s", nexus_name);
+    di_devfs_path_free(nexus_name);
 
     if ((fd = open(nexus_path, O_RDWR)) >= 0) {
 	nexus->fd = fd;
@@ -546,7 +535,6 @@ probe_nexus_node(di_node_t di_node, di_minor_t minor, void *arg)
 		       nexus_path, strerror(errno));
 	free(nexus);
     }
-    di_devfs_path_free(nexus_name);
 
     return DI_WALK_CONTINUE;
 }
@@ -712,8 +700,8 @@ pci_device_solx_devfs_probe( struct pci_device * dev )
 	 * using libdevinfo
 	 */
 	if ((rnode = di_init("/", DINFOCPYALL)) == DI_NODE_NIL) {
-	    (void) fprintf(stderr, "di_init failed: %s\n", strerror(errno));
 	    err = errno;
+	    (void) fprintf(stderr, "di_init failed: %s\n", strerror(errno));
 	} else {
 	    args.bus = dev->bus;
 	    args.dev = dev->dev;
@@ -725,7 +713,7 @@ pci_device_solx_devfs_probe( struct pci_device * dev )
     }
     if (args.node != DI_NODE_NIL) {
 	/*
-	 * It will success for sure, because it was
+	 * It will succeed for sure, because it was
 	 * successfully called in find_target_node
 	 */
 	len = di_prop_lookup_ints(DDI_DEV_T_ANY, args.node,
@@ -809,35 +797,27 @@ pci_device_solx_devfs_probe( struct pci_device * dev )
 }
 
 /*
- * Solaris version: read the ROM data
+ * Solaris version: read the VGA ROM data
  */
 static int
 pci_device_solx_devfs_read_rom( struct pci_device * dev, void * buffer )
 {
-    void *prom = MAP_FAILED;
+    int err;
+    struct pci_device_mapping prom = {
+	.base = 0xC0000,
+	.size = dev->rom_size,
+	.flags = 0
+    };
+    
+    err = pci_device_solx_devfs_map_range(dev, &prom);
+    if (err == 0) {
+	(void) bcopy(prom.memory, buffer, dev->rom_size);
 
-    if (xsvc_fd < 0) {
-	if ((xsvc_fd = open("/dev/xsvc", O_RDWR)) < 0) {
-	    (void) fprintf(stderr, "can not open xsvc driver\n");
-
-	    return (-1);
+	if (munmap(prom.memory, dev->rom_size) == -1) {
+	    err = errno;
 	}
     }
-
-    prom = mmap(NULL, dev->rom_size,
-		PROT_READ, MAP_SHARED,
-		xsvc_fd, 0xC0000);
-
-    if (prom == MAP_FAILED) {
-	(void) fprintf(stderr, "map rom base =0xC0000 failed");
-	return (-1);
-    }
-    (void) bcopy(prom, buffer, dev->rom_size);
-
-    /*
-     * Still used xsvc to do the user space mapping
-     */
-    return (0);
+    return err;
 }
 
 /*
@@ -927,7 +907,7 @@ pci_device_solx_devfs_write( struct pci_device * dev, const void * data,
 	    cfg_prg.acc_attr = PCITOOL_ACC_ATTR_SIZE_8 + NATIVE_ENDIAN;
 	    break;
         default:
-	    assert(0);
+	    return EINVAL;
     }
     cfg_prg.bus_no = dev->bus;
     cfg_prg.dev_no = dev->dev;
@@ -971,10 +951,15 @@ pci_device_solx_devfs_map_range(struct pci_device *dev,
 			? (PROT_READ | PROT_WRITE) : PROT_READ;
     int err = 0;
 
+    /*
+     * Still used xsvc to do the user space mapping
+     */
     if (xsvc_fd < 0) {
 	if ((xsvc_fd = open("/dev/xsvc", O_RDWR)) < 0) {
-	    (void) fprintf(stderr, "can not open xsvc driver\n");
-	    return errno;
+	    err = errno;
+	    (void) fprintf(stderr, "can not open /dev/xsvc: %s\n",
+			   strerror(errno));
+	    return err;
 	}
     }
 
@@ -982,7 +967,8 @@ pci_device_solx_devfs_map_range(struct pci_device *dev,
     if (map->memory == MAP_FAILED) {
 	err = errno;
 
-	(void) fprintf(stderr, "map rom region =%llx failed", map->base);
+	(void) fprintf(stderr, "map rom region =%llx failed: %s\n",
+		       map->base, strerror(errno));
     }
 
     return err;
