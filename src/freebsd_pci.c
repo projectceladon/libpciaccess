@@ -43,6 +43,7 @@
 #include <sys/mman.h>
 #include <sys/memrange.h>
 
+#include "config.h"
 #include "pciaccess.h"
 #include "pciaccess_private.h"
 
