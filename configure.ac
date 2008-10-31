@@ -61,7 +61,7 @@ AC_DEFINE_DIR(PCIIDS_PATH, PCIIDS_PATH, [Path to pci.ids])
 
 AC_ARG_WITH(zlib,
 	AS_HELP_STRING([--with-zlib], [Enable zlib support to read gzip compressed pci.ids]),
-	[use_zlib="yes"],
+	[use_zlib="$withval"],
 	[use_zlib="no"])
 if test "x$use_zlib" = xyes; then
 	AC_CHECK_LIB(z, gzopen,
