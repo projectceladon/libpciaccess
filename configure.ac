@@ -116,6 +116,8 @@ AM_CONDITIONAL(NETBSD, [test "x$netbsd" = xyes])
 AM_CONDITIONAL(OPENBSD, [test "x$openbsd" = xyes])
 AM_CONDITIONAL(SOLARIS, [test "x$solaris" = xyes])
 
+AC_SYS_LARGEFILE
+
 AC_CHECK_HEADER([asm/mtrr.h], [have_mtrr_h="yes"], [have_mtrr_h="no"])
 
 if test "x$have_mtrr_h" = xyes; then
