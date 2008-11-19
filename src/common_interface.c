@@ -52,10 +52,20 @@
 #endif /* linux */
 
 #elif defined(__sun)
-#define	LETOH_16(x)	(x)
-#define	HTOLE_16(x)	(x)
-#define	LETOH_32(x)	(x)
-#define	HTOLE_32(x)	(x)
+
+#include <sys/byteorder.h>
+
+#ifdef _BIG_ENDIAN
+# define LETOH_16(x)   BSWAP_16(x)
+# define HTOLE_16(x)   BSWAP_16(x)
+# define LETOH_32(x)   BSWAP_32(x)
+# define HTOLE_32(x)   BSWAP_32(x)
+#else
+# define LETOH_16(x)   (x)
+# define HTOLE_16(x)   (x)
+# define LETOH_32(x)   (x)
+# define HTOLE_32(x)   (x)
+#endif /* Solaris */
 
 #else
 
