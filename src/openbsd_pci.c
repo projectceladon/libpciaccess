@@ -74,6 +74,66 @@ pci_write(int bus, int dev, int func, uint32_t reg, uint32_t val)
 	return ioctl(pcifd, PCIOCWRITE, &io);
 }
 
+/**
+ * Read a VGA ROM
+ *
+ */
+static int
+pci_device_openbsd_read_rom(struct pci_device *device, void *buffer)
+{
+	struct pci_device_private *priv = (struct pci_device_private *)device;
+	unsigned char *bios;
+	pciaddr_t rom_base;
+	pciaddr_t rom_size;
+	u_int32_t csr, rom;
+	int pci_rom, bus, dev, func;
+
+	bus = device->bus;
+	dev = device->dev;
+	func = device->func;
+
+	if (aperturefd == -1)
+		return ENOSYS;
+
+	if (priv->base.rom_size == 0) {
+#if defined(__alpha__) || defined(__amd64__) || defined(__i386__)
+		if ((device->device_class & 0x00ffff00) ==
+		    ((PCI_CLASS_DISPLAY << 16) |
+			(PCI_SUBCLASS_DISPLAY_VGA << 8))) {
+			rom_base = 0xc0000;
+			rom_size = 0x10000;
+			pci_rom = 0;
+		} else
+#endif
+			return ENOSYS;
+	} else {
+		rom_base = priv->rom_base;
+		rom_size = priv->base.rom_size;
+		pci_rom = 1;
+
+		pci_read(bus, dev, func, PCI_COMMAND_STATUS_REG, &csr);
+		pci_write(bus, dev, func, PCI_COMMAND_STATUS_REG,
+		    csr | PCI_COMMAND_MEM_ENABLE);
+		pci_read(bus, dev, func, PCI_ROM_REG, &rom);
+		pci_write(bus, dev, func, PCI_ROM_REG, rom | PCI_ROM_ENABLE);
+	}
+
+	bios = mmap(NULL, rom_size, PROT_READ, MAP_SHARED,
+	    aperturefd, (off_t)rom_base);
+	if (bios == MAP_FAILED)
+		return errno;
+
+	memcpy(buffer, bios, device->rom_size);
+	munmap(bios, device->rom_size);
+
+	if (pci_rom) {
+		/* Restore PCI config space */
+		pci_write(bus, dev, func, PCI_ROM_REG, rom);
+		pci_write(bus, dev, func, PCI_COMMAND_STATUS_REG, csr);
+	}
+	return 0;
+}
+
 static int
 pci_nfuncs(int bus, int dev)
 {
@@ -100,7 +160,7 @@ pci_device_openbsd_map_range(struct pci_device *dev,
 	    map->base);
 	if (map->memory == MAP_FAILED)
 		return  errno;
-
+#if defined(__i386__) || defined(__amd64__)
 	/* No need to set an MTRR if it's the default mode. */
 	if ((map->flags & PCI_DEV_MAP_FLAG_CACHABLE) ||
 	    (map->flags & PCI_DEV_MAP_FLAG_WRITE_COMBINE)) {
@@ -117,9 +177,10 @@ pci_device_openbsd_map_range(struct pci_device *dev,
 		mo.mo_arg[0] = MEMRANGE_SET_UPDATE;
 
 		if (ioctl(aperturefd, MEMRANGE_SET, &mo))
-			return errno;
+			(void)fprintf(stderr, "mtrr set failed: %s\n",
+			    strerror(errno));
 	}
-
+#endif
 	return 0;
 }
 
@@ -127,6 +188,7 @@ static int
 pci_device_openbsd_unmap_range(struct pci_device *dev,
     struct pci_device_mapping *map)
 {
+#if defined(__i386__) || defined(__amd64__)
 	struct mem_range_desc mr;
 	struct mem_range_op mo;
 
@@ -142,7 +204,7 @@ pci_device_openbsd_unmap_range(struct pci_device *dev,
 
 		(void)ioctl(aperturefd, MEMRANGE_SET, &mo);
 	}
-
+#endif
 	return pci_device_generic_unmap_range(dev, map);
 }
 
@@ -199,7 +261,7 @@ pci_device_openbsd_write(struct pci_device *dev, const void *data,
 		io.pi_width = 4;
 		memcpy(&io.pi_data, data, 4);
 
-		if (ioctl(pcifd, PCIOCWRITE, &io) == -1) 
+		if (ioctl(pcifd, PCIOCWRITE, &io) == -1)
 			return errno;
 
 		offset += 4;
@@ -298,13 +360,29 @@ pci_device_openbsd_probe(struct pci_device *device)
 		}
 	}
 
+	/* Probe expansion ROM if present */
+	err = pci_read(bus, dev, func, PCI_ROM_REG, &reg);
+	if (err)
+		return err;
+	if (reg != 0) {
+		err = pci_write(bus, dev, func, PCI_ROM_REG, ~PCI_ROM_ENABLE);
+		if (err)
+			return err;
+		pci_read(bus, dev, func, PCI_ROM_REG, &size);
+		pci_write(bus, dev, func, PCI_ROM_REG, reg);
+
+		if (PCI_ROM_ADDR(reg) != 0) {
+			priv->rom_base = PCI_ROM_ADDR(reg);
+			device->rom_size = PCI_ROM_SIZE(size);
+		}
+	}
 	return 0;
 }
 
 static const struct pci_system_methods openbsd_pci_methods = {
 	pci_system_openbsd_destroy,
 	NULL,
-	NULL,
+	pci_device_openbsd_read_rom,
 	pci_device_openbsd_probe,
 	pci_device_openbsd_map_range,
 	pci_device_openbsd_unmap_range,
@@ -320,7 +398,7 @@ pci_system_openbsd_create(void)
 	int bus, dev, func, ndevs, nfuncs;
 	uint32_t reg;
 
-	if (pcifd != -1) 
+	if (pcifd != -1)
 		return 0;
 
 	pcifd = open("/dev/pci", O_RDWR);
