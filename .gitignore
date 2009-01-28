@@ -1,3 +1,5 @@
+.deps
+.libs
 aclocal.m4
 autom4te.cache
 config.guess
@@ -17,5 +19,12 @@ Makefile
 Makefile.in
 missing
 mkinstalldirs
+scanpci
 stamp-h1
 *~
+*.o
+*.la
+*.lo
+libpciaccess-*.tar.*
+ChangeLog
+tags

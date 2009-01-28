@@ -44,25 +44,25 @@ AC_INIT(libpciaccess, 0.10.5, [https://bugs.freedesktop.org/enter_bug.cgi?produc
 AM_INIT_AUTOMAKE([dist-bzip2])
 AM_MAINTAINER_MODE
 
+# Require xorg-macros: XORG_CWARNFLAGS, XORG_CHANGELOG
+m4_ifndef([XORG_MACROS_VERSION], [AC_FATAL([must install xorg-macros 1.2 or later before running autoconf/autogen])])
+XORG_MACROS_VERSION(1.2)
 AM_CONFIG_HEADER(config.h)
 
 # Check for progs
 AC_PROG_CC
 AC_PROG_LIBTOOL
+XORG_CWARNFLAGS
 
-m4_ifdef([AS_HELP_STRING], , [m4_define([AS_HELP_STRING], m4_defn([AC_HELP_STRING]))])
+pciids_path=/usr/share/hwdata
+AC_ARG_WITH(pciids-path, AC_HELP_STRING([--with-pciids-path=PCIIDS_PATH],
+	[Path to pci.ids file]), [pciids_path="$withval"])
+AC_DEFINE_DIR(PCIIDS_PATH, pciids_path, [Path to pci.ids])
 
-DEFAULT_PCIIDS_PATH=/usr/share/hwdata
-AC_ARG_WITH(pciids-path,
-	AS_HELP_STRING([--with-pciids-path=PCIIDS_PATH], [Path to pci.ids file]),
-	[PCIIDS_PATH="$withval"],
-	[PCIIDS_PATH="$DEFAULT_PCIIDS_PATH"])
-AC_DEFINE_DIR(PCIIDS_PATH, PCIIDS_PATH, [Path to pci.ids])
-
-AC_ARG_WITH(zlib,
-	AS_HELP_STRING([--with-zlib], [Enable zlib support to read gzip compressed pci.ids]),
-	[use_zlib="$withval"],
-	[use_zlib="no"])
+use_zlib=no
+AC_ARG_WITH(zlib, AC_HELP_STRING([--with-zlib],
+	[Enable zlib support to read gzip compressed pci.ids]),
+	[use_zlib="$withval"])
 if test "x$use_zlib" = xyes; then
 	AC_CHECK_LIB(z, gzopen,
 	[PCIACCESS_LIBS="$PCIACCESS_LIBS -lz"],
@@ -70,17 +70,6 @@ if test "x$use_zlib" = xyes; then
 	AC_CHECK_HEADER([zlib.h],
 	[AC_DEFINE(HAVE_ZLIB, 1, [Use zlib to read gzip compressed pci.ids])],
 	[AC_MSG_ERROR(Check for zlib.h header file failed)])
-fi
-
-if test "x$GCC" = "xyes"; then
-       GCC_WARNINGS1="-Wall -Wpointer-arith -Wstrict-prototypes"
-       GCC_WARNINGS2="-Wmissing-prototypes -Wmissing-declarations"
-       GCC_WARNINGS3="-Wnested-externs"
-       GCC_WARNINGS="$GCC_WARNINGS1 $GCC_WARNINGS2 $GCC_WARNINGS3"
-       if test "x$WERROR" = "xyes"; then
-               GCC_WARNINGS="${GCC_WARNINGS} -Werror"
-       fi
-       PCIACCESS_CFLAGS="$PCIACCESS_CFLAGS $GCC_WARNINGS"
 fi
 
 case $host_os in
@@ -132,10 +121,12 @@ AC_CHECK_MEMBER([struct pci_io.pi_sel.pc_domain],
                  #include <sys/pciio.h>
                ])
 
+PCIACCESS_CFLAGS="$CWARFLAGS $PCIACCESS_CFLAGS"
 AC_SUBST(PCIACCESS_CFLAGS)
 AC_SUBST(PCIACCESS_LIBS)
 		  
 XORG_RELEASE_VERSION
+XORG_CHANGELOG
 
 AC_OUTPUT([Makefile
 	   src/Makefile
