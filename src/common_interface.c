@@ -108,6 +108,20 @@ pci_device_read_rom( struct pci_device * dev, void * buffer )
     return (pci_sys->methods->read_rom)( dev, buffer );
 }
 
+/**
+ * Probe a PCI (VGA) device to determine if its the boot VGA device
+ *
+ * \param dev    Device whose VGA status to query
+ * \return
+ * Zero if not the boot VGA, 1 if the boot VGA.
+ */
+int
+pci_device_is_boot_vga( struct pci_device * dev )
+{
+	if (!pci_sys->methods->boot_vga)
+		return 0;
+	return pci_sys->methods->boot_vga( dev );
+}
 
 /**
  * Probe a PCI device to learn information about the device.
