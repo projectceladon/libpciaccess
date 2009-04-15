@@ -726,8 +726,8 @@ pci_device_solx_devfs_probe( struct pci_device * dev )
 {
     uint8_t  config[256];
     int err;
-    di_node_t rnode;
-    i_devnode_t args;
+    di_node_t rnode = DI_NODE_NIL;
+    i_devnode_t args = { 0, 0, 0, DI_NODE_NIL };
     int *regbuf;
     pci_regspec_t *reg;
     int i;
@@ -736,7 +736,6 @@ pci_device_solx_devfs_probe( struct pci_device * dev )
     uint ent = 0;
 
     err = pci_device_solx_devfs_read( dev, config, 0, 256, & bytes );
-    args.node = DI_NODE_NIL;
 
     if ( bytes >= 64 ) {
 	struct pci_device_private *priv =
@@ -771,7 +770,6 @@ pci_device_solx_devfs_probe( struct pci_device * dev )
 	    args.func = dev->func;
 	    (void) di_walk_node(rnode, DI_WALK_CLDFIRST,
 				(void *)&args, find_target_node);
-	    di_fini(rnode);
 	}
     }
     if (args.node != DI_NODE_NIL) {
@@ -786,7 +784,7 @@ pci_device_solx_devfs_probe( struct pci_device * dev )
     }
 
     if (len <= 0)
-	return (err);
+	goto cleanup;
 
 
     /*
@@ -868,6 +866,10 @@ pci_device_solx_devfs_probe( struct pci_device * dev )
 	}
     }
 
+  cleanup:
+    if (rnode != DI_NODE_NIL) {
+	di_fini(rnode);
+    }
     return (err);
 }
 
