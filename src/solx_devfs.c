@@ -89,7 +89,7 @@ typedef struct nexus {
     int fd;
     int first_bus;
     int last_bus;
-    const char *path;		/* for errors/debugging; fd is all we need */
+    char *path;			/* for errors/debugging; fd is all we need */
     struct nexus *next;
 } nexus_t;
 
@@ -504,13 +504,13 @@ static int
 probe_nexus_node(di_node_t di_node, di_minor_t minor, void *arg)
 {
     struct pci_system *pci_sys = (struct pci_system *) arg;
-    const char *nexus_name;
+    char *nexus_name;
     nexus_t *nexus;
     int fd;
     char nexus_path[MAXPATHLEN];
 
     di_prop_t prop;
-    const char *strings;
+    char *strings;
     int *ints;
     int numval;
     int pci_node = 0;
@@ -576,7 +576,6 @@ probe_nexus_node(di_node_t di_node, di_minor_t minor, void *arg)
 
     snprintf(nexus_path, sizeof(nexus_path), "/devices%s", nexus_name);
     di_devfs_path_free(nexus_name);
-    nexus->path = strdup(nexus_path);
 
 #ifdef DEBUG
     fprintf(stderr, "nexus = %s, bus-range = %d - %d\n",
@@ -585,6 +584,7 @@ probe_nexus_node(di_node_t di_node, di_minor_t minor, void *arg)
 
     if ((fd = open(nexus_path, O_RDWR)) >= 0) {
 	nexus->fd = fd;
+	nexus->path = strdup(nexus_path);
 	if ((do_probe(nexus, pci_sys) != 0) && (errno != ENXIO)) {
 	    (void) fprintf(stderr, "Error probing node %s: %s\n",
 			   nexus_path, strerror(errno));
@@ -598,7 +598,6 @@ probe_nexus_node(di_node_t di_node, di_minor_t minor, void *arg)
     } else {
 	(void) fprintf(stderr, "Error opening %s: %s\n",
 		       nexus_path, strerror(errno));
-	free(nexus->path);
 	free(nexus);
     }
 
