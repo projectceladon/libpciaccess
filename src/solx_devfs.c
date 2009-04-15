@@ -734,6 +734,7 @@ pci_device_solx_devfs_probe( struct pci_device * dev )
     int i;
     pciaddr_t bytes;
     int len = 0;
+    uint ent = 0;
 
     err = pci_device_solx_devfs_read( dev, config, 0, 256, & bytes );
     args.node = DI_NODE_NIL;
@@ -815,13 +816,21 @@ pci_device_solx_devfs_probe( struct pci_device * dev )
     }
 
     /*
-     * solaris has its own BAR index. To be sure that
-     * Xorg has the same BAR number as solaris. ????
+     * Solaris has its own BAR index.
+     * Linux give two region slot for 64 bit address.
      */
     for (i = 0; i < len; i = i + CELL_NUMS_1275) {
-	int ent = i/CELL_NUMS_1275;
 
 	reg = (pci_regspec_t *)&regbuf[i];
+	ent = reg->pci_phys_hi & 0xff;
+	/*
+	 * G35 broken in BAR0
+	 */
+	ent = (ent - PCI_CONF_BASE0) >> 2;
+	if (ent >= 6) {
+	    fprintf(stderr, "error ent = %d\n", ent);
+	    break;
+	}
 
 	/*
 	 * non relocatable resource is excluded
@@ -835,16 +844,6 @@ pci_device_solx_devfs_probe( struct pci_device * dev )
 	    dev->regions[ent].is_prefetchable = 1;
 	}
 
-	switch (reg->pci_phys_hi & PCI_REG_ADDR_M) {
-	    case PCI_ADDR_IO:
-		dev->regions[ent].is_IO = 1;
-		break;
-	    case PCI_ADDR_MEM32:
-		break;
-	    case PCI_ADDR_MEM64:
-		dev->regions[ent].is_64 = 1;
-		break;
-	}
 
 	/*
 	 * We split the shift count 32 into two 16 to
@@ -854,6 +853,20 @@ pci_device_solx_devfs_probe( struct pci_device * dev )
 	    ((reg->pci_phys_mid << 16) << 16);
 	dev->regions[ent].size = reg->pci_size_low +
 	    ((reg->pci_size_hi << 16) << 16);
+
+	switch (reg->pci_phys_hi & PCI_REG_ADDR_M) {
+	    case PCI_ADDR_IO:
+		dev->regions[ent].is_IO = 1;
+		break;
+	    case PCI_ADDR_MEM32:
+		break;
+	    case PCI_ADDR_MEM64:
+		dev->regions[ent].is_64 = 1;
+		/*
+		 * Skip one slot for 64 bit address
+		 */
+		break;
+	}
     }
 
     return (err);
