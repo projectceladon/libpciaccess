@@ -105,7 +105,6 @@ AC_CHECK_MEMBER([struct pci_io.pi_sel.pc_domain],
                  #include <sys/pciio.h>
                ])
 
-PCIACCESS_CFLAGS="$CWARFLAGS $PCIACCESS_CFLAGS"
 AC_SUBST(PCIACCESS_CFLAGS)
 AC_SUBST(PCIACCESS_LIBS)
 		  
