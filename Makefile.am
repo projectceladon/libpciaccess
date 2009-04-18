@@ -21,6 +21,9 @@
 # FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
 # DEALINGS IN THE SOFTWARE.
 
+# Include autoconf macros from m4 subdir
+ACLOCAL_AMFLAGS = -I m4
+
 SUBDIRS = src
 
 pkgconfigdir = $(libdir)/pkgconfig
