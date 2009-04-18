@@ -668,18 +668,17 @@ find_target_node(di_node_t node, void *arg)
     int *regbuf = NULL;
     int len = 0;
     uint32_t busno, funcno, devno;
-    i_devnode_t *devnode;
-    void *prop = DI_PROP_NIL;
-    int i;
-
-    devnode = (i_devnode_t *)arg;
+    i_devnode_t *devnode = (i_devnode_t *)arg;
 
     /*
      * Test the property functions, only for testing
      */
     /*
+    void *prop = DI_PROP_NIL;
+
     (void) fprintf(stderr, "start of node 0x%x\n", node->nodeid);
     while ((prop = di_prop_hw_next(node, prop)) != DI_PROP_NIL) {
+	int i;
 	(void) fprintf(stderr, "name=%s: ", di_prop_name(prop));
 	len = 0;
 	if (!strcmp(di_prop_name(prop), "reg")) {
