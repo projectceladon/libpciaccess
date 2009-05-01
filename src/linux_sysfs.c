@@ -716,7 +716,7 @@ static int pci_device_linux_sysfs_boot_vga(struct pci_device *dev)
 	      dev->dev,
 	      dev->func );
     
-    fd = open( name, O_RDWR );
+    fd = open( name, O_RDONLY );
     if (fd == -1)
        return 0;
 
