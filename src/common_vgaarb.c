@@ -24,8 +24,6 @@
  *
  */
 
-/* vgaaccess.c */
-
 #ifdef HAVE_CONFIG_H
 #include <config.h>
 #endif
@@ -39,7 +37,7 @@
 #include <fcntl.h>
 #include <errno.h>
 
-#include "vgaaccess.h"
+#include "pciaccess.h"
 
 /* ALL messages *should* fit in this buffer */
 #define BUFSIZE 128
@@ -101,7 +99,6 @@ rsrc_to_str(VgaArbRsrcType iostate)
         return "none";
 }
 
-#ifndef STUB
 int
 vga_arb_read(vga_arb_ptr vgaDev)
 {
@@ -220,54 +217,3 @@ vga_arb_fini(vga_arb_ptr vgaDev)
     if (close(vgaDev->fd) == -1)
     perror("[libvgaaccess] device close failed");
 }
-
-#else /* STUB */
-int
-vga_arb_read(vga_arb_ptr vgaDev)
-{
-    return 1;
-}
-
-int
-vga_arb_set_target(vga_arb_ptr vgaDev, unsigned int domain, unsigned int bus,
-                   unsigned int dev,    unsigned int fn)
-{
-    return 1;
-}
-
-int
-vga_arb_lock(vga_arb_ptr vgaDev)
-{
-    return 1;
-}
-
-int
-vga_arb_trylock(vga_arb_ptr vgaDev)
-{
-    return 1;
-}
-
-int
-vga_arb_unlock(vga_arb_ptr vgaDev)
-{
-    return 1;
-}
-
-int
-vga_arb_decodes(vga_arb_ptr vgaDev)
-{
-    return 1;
-}
-
-int
-vga_arb_init(vga_arb_ptr *vgaDev)
-{
-    fprintf(stderr, "[libvgaaccess] YOU'RE USING THE STUB FUNCTIONS!\n");
-    return 1;
-}
-
-void
-vga_arb_fini(vga_arb_ptr vgaDev)
-{
-}
-#endif /* END OF STUB */

@@ -45,6 +45,12 @@ if SOLARIS
 OS_SUPPORT = solx_devfs.c pci_tools.h
 endif
 
+if LINUX
+VGA_ARBITER = common_vgaarb.c
+else
+VGA_ARBITER = common_vgaarb_stub.c
+endif
+
 libpciaccess_la_SOURCES = common_bridge.c \
 	common_iterator.c \
 	common_init.c \
@@ -53,6 +59,7 @@ libpciaccess_la_SOURCES = common_bridge.c \
 	common_device_name.c \
 	common_map.c \
 	pciaccess_private.h \
+	$(VGA_ARBITER) \
 	$(OS_SUPPORT)
 
 INCLUDES = -I$(top_srcdir)/include
