@@ -21,6 +21,31 @@
  * FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
  * DEALINGS IN THE SOFTWARE.
  */
+/*
+ * Copyright (c) 2007 Paulo R. Zanoni, Tiago Vignatti
+ *
+ * Permission is hereby granted, free of charge, to any person
+ * obtaining a copy of this software and associated documentation
+ * files (the "Software"), to deal in the Software without
+ * restriction, including without limitation the rights to use,
+ * copy, modify, merge, publish, distribute, sublicense, and/or sell
+ * copies of the Software, and to permit persons to whom the
+ * Software is furnished to do so, subject to the following
+ * conditions:
+ *
+ * The above copyright notice and this permission notice shall be
+ * included in all copies or substantial portions of the Software.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
+ * EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES
+ * OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
+ * NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT
+ * HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY,
+ * WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+ * FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
+ * OTHER DEALINGS IN THE SOFTWARE.
+ *
+ */
 
 /**
  * \file pciaccess.h
@@ -448,5 +473,55 @@ struct pci_pcmcia_bridge_info {
     } mem[2];
 
 };
+
+
+/**
+ * VGA Arbiter definitions, functions and related.
+ */
+
+typedef int VgaArbRsrcType;
+
+typedef struct {
+    int fd;
+    VgaArbRsrcType rsrc;
+} vga_arb_rec, *vga_arb_ptr;
+
+/* This is a mask that can be OR'ed */
+#define VGA_ARB_RSRC_NONE       0
+#define VGA_ARB_RSRC_LEGACY_IO  1
+#define VGA_ARB_RSRC_LEGACY_MEM 2
+#define VGA_ARB_RSRC_NORMAL_IO  4
+#define VGA_ARB_RSRC_NORMAL_MEM 8
+
+/*
+ * All functions, except vga_arb_trylock(), return 1 on success and 0 if
+ * something went wrong.
+ * vga_arb_trylock returns 1 on success, 0 if the lock failed and -1 if
+ * something went wrong.
+ *
+ * But I really don't think you should be checking the return values. The lib
+ * checks for these errors but they should never happen, and when they happen
+ * it will print error messages at stderr.
+ *
+ * To understand the way these functions work see test/test2lib.c.
+ */
+
+
+int vga_arb_set_target (vga_arb_ptr vgaDev, unsigned int domain,
+                        unsigned int bus, unsigned int dev, unsigned int fn);
+
+int vga_arb_read    (vga_arb_ptr vgaDev);
+
+int vga_arb_lock    (vga_arb_ptr vgaDev);
+
+int vga_arb_trylock (vga_arb_ptr vgaDev);
+
+int vga_arb_unlock  (vga_arb_ptr vgaDev);
+
+int vga_arb_decodes (vga_arb_ptr vgaDev);
+
+int vga_arb_init    (vga_arb_ptr *vgaDev);
+
+void vga_arb_fini   (vga_arb_ptr vgaDev);
 
 #endif /* PCIACCESS_H */
