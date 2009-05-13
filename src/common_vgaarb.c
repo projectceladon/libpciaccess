@@ -1,5 +1,6 @@
 /*
  * Copyright (c) 2007 Paulo R. Zanoni, Tiago Vignatti
+ *               2009 Tiago Vignatti
  *
  * Permission is hereby granted, free of charge, to any person
  * obtaining a copy of this software and associated documentation
@@ -41,8 +42,33 @@
 
 /* ALL messages *should* fit in this buffer */
 #define BUFSIZE 128
+#define VGAARB_DEV "/dev/vga_arbiter"
 
-#define ARBITER_DEVICE "/dev/vga_arbiter"
+int
+pci_device_vgaarb_init(vga_arb_ptr *vgaDev)
+{
+    *vgaDev = malloc (sizeof(vga_arb_ptr *));
+    if (vgaDev == NULL) {
+        fprintf(stderr, "%s: malloc: couldn't allocate memory\n", __FUNCTION__);
+        return 0;
+    }
+
+    (*vgaDev)->rsrc = 0;
+
+    if (((*vgaDev)->fd = open (VGAARB_DEV, O_RDWR)) < 0) {
+        perror("device open failed");
+        return 0;
+    }
+
+    return (*vgaDev)->fd;
+}
+
+void
+pci_device_vgaarb_fini(vga_arb_ptr vgaDev)
+{
+    if (close(vgaDev->fd) == -1)
+        perror("device close failed");
+}
 
 /*
  * Writes the message on the device.
@@ -52,53 +78,54 @@
  *      2 if the device returned EBUSY (used ONLY by trylock)
  */
 static int
-vga_arb_write(int fd, char *buf, int len)
+vgaarb_write(int fd, char *buf, int len)
 {
     int ret;
-   
+
     /* Just to make sure... */
     buf[len] = '\0';
 
     ret = write(fd, buf, len);
 
     if (ret == -1) {
-    /* Check for EBUSY: the user may have called "trylock" and didn't get
-     * the lock. */
-    if (errno == EBUSY)
-        return 2;
-        perror("[libvgaaccess] write error");
-    return 0;
+       /* Check for EBUSY: the user may have called "trylock" and didn't get
+         * the lock. */
+        if (errno == EBUSY)
+            return 2;
+
+        perror("write error");
+        return 0;
     }
     else if (ret != len) {
-    /* The VGA arbiter implementation shouldn't recive less than one
-     * single message. It also shouldn't recive more. */
-    fprintf(stderr, "[libvgaaccess] write error: "
-            "wrote less than expected!\n");
-    return 0;
+        /* The VGA arbiter implementation shouldn't receive less than one
+         * single message. It also shouldn't receive more. */
+        fprintf(stderr, "%s: write error: "
+                "wrote less than expected\n", __FUNCTION__);
+        return 0;
     }
 
 #ifdef DEBUG
-    fprintf(stderr, "[libvgaaccess] successfully wrote: '%s'.\n", buf);
+    fprintf(stderr, "%s: successfully wrote: '%s'\n", __FUNCTION__, buf);
 #endif
 
     return 1;
 }
 
-/* Convert "integer rsrc" in "string rsrc" */
 static const char *
 rsrc_to_str(VgaArbRsrcType iostate)
 {
-        switch (iostate) {
-        case VGA_ARB_RSRC_LEGACY_IO | VGA_ARB_RSRC_LEGACY_MEM:
-                return "io+mem";
-        case VGA_ARB_RSRC_LEGACY_IO:
-                return "io";
-        case VGA_ARB_RSRC_LEGACY_MEM:
-                return "mem";
-        }
-        return "none";
-}
+    switch (iostate) {
+    case VGA_ARB_RSRC_LEGACY_IO | VGA_ARB_RSRC_LEGACY_MEM:
+        return "io+mem";
+    case VGA_ARB_RSRC_LEGACY_IO:
+        return "io";
+    case VGA_ARB_RSRC_LEGACY_MEM:
+        return "mem";
+    }
 
+    return "none";
+}
+#if 0
 int
 vga_arb_read(vga_arb_ptr vgaDev)
 {
@@ -113,23 +140,23 @@ vga_arb_read(vga_arb_ptr vgaDev)
 
     if (ret == 0) {
     /* It always has something to be read. */
-    fprintf(stderr, "[libvgaaccess] error: there is nothing to read!\n");
+    fprintf(stderr, "%s: error: there is nothing to read\n", __FUNCTION__);
     return 0;
     }
     else if (ret == -1) {
-    perror("[libvgaaccess] read error");
+    perror("read error");
     return 0;
     }
 
-#ifdef DEBUG    
-    fprintf(stderr, "[libvgaaccess]: sucessfully read: '%s'.\n", buf);
+#ifdef DEBUG
+    fprintf(stderr, "%s: sucessfully read: '%s'\n", __FUCNTION__, buf);
 #endif
     return 1;
 }
-
+#endif
 int
-vga_arb_set_target(vga_arb_ptr vgaDev, unsigned int domain, unsigned int bus,
-               unsigned int dev, unsigned int fn)
+pci_device_vgaarb_set_target(vga_arb_ptr vgaDev, unsigned int domain,
+                unsigned int bus, unsigned int dev, unsigned int fn)
 {
     int len;
     char buf[BUFSIZE];
@@ -137,29 +164,40 @@ vga_arb_set_target(vga_arb_ptr vgaDev, unsigned int domain, unsigned int bus,
     len = snprintf(buf, BUFSIZE, "target PCI:%d:%d:%d.%d",
                    domain, bus, dev, fn);
 
-    return vga_arb_write(vgaDev->fd, buf, len);
+    return vgaarb_write(vgaDev->fd, buf, len);
 }
 
 int
-vga_arb_lock(vga_arb_ptr vgaDev)
+pci_device_vgaarb_decodes(vga_arb_ptr vgaDev)
+{
+    int len;
+    char buf[BUFSIZE];
+
+    len = snprintf(buf, BUFSIZE, "decodes %s", rsrc_to_str(vgaDev->rsrc));
+
+    return vgaarb_write(vgaDev->fd, buf, len);
+}
+
+int
+pci_device_vgaarb_lock(vga_arb_ptr vgaDev)
 {
     int len;
     char buf[BUFSIZE];
 
     len = snprintf(buf, BUFSIZE, "lock %s", rsrc_to_str(vgaDev->rsrc));
 
-    return vga_arb_write(vgaDev->fd, buf, len);
+    return vgaarb_write(vgaDev->fd, buf, len);
 }
 
 int
-vga_arb_trylock(vga_arb_ptr vgaDev)
+pci_device_vgaarb_trylock(vga_arb_ptr vgaDev)
 {
     int len, write_ret;
     char buf[BUFSIZE];
 
     len = snprintf(buf, BUFSIZE, "trylock %s", rsrc_to_str(vgaDev->rsrc));
 
-    write_ret = vga_arb_write(vgaDev->fd, buf, len);
+    write_ret = vgaarb_write(vgaDev->fd, buf, len);
 
     if (write_ret == 0)
         return -1;
@@ -171,49 +209,12 @@ vga_arb_trylock(vga_arb_ptr vgaDev)
 }
 
 int
-vga_arb_unlock(vga_arb_ptr vgaDev)
+pci_device_vgaarb_unlock(vga_arb_ptr vgaDev)
 {
     int len;
     char buf[BUFSIZE];
 
     len = snprintf(buf, BUFSIZE, "unlock %s", rsrc_to_str(vgaDev->rsrc));
 
-    return vga_arb_write(vgaDev->fd, buf, len);
-}
-
-int
-vga_arb_decodes(vga_arb_ptr vgaDev)
-{
-    int len;
-    char buf[BUFSIZE];
-
-    len = snprintf(buf, BUFSIZE, "decodes %s", rsrc_to_str(vgaDev->rsrc));
-
-    return vga_arb_write(vgaDev->fd, buf, len);
-}
-
-int
-vga_arb_init(vga_arb_ptr *vgaDev)
-{
-    *vgaDev = malloc (sizeof(vga_arb_ptr *));
-    if (vgaDev == NULL) {
-    fprintf(stderr, "[libvgaaccess] malloc: couldn't allocate memory!\n");
-    return 0;
-    }
-
-    (*vgaDev)->rsrc = 0;
-
-    if (((*vgaDev)->fd = open (ARBITER_DEVICE, O_RDWR)) < 0) {
-        perror("[libvgaaccess] device open failed");
-        return 0;
-    }
-
-    return (*vgaDev)->fd;
-}
-
-void
-vga_arb_fini(vga_arb_ptr vgaDev)
-{
-    if (close(vgaDev->fd) == -1)
-    perror("[libvgaaccess] device close failed");
+    return vgaarb_write(vgaDev->fd, buf, len);
 }

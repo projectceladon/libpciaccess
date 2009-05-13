@@ -481,11 +481,6 @@ struct pci_pcmcia_bridge_info {
 
 typedef int VgaArbRsrcType;
 
-typedef struct {
-    int fd;
-    VgaArbRsrcType rsrc;
-} vga_arb_rec, *vga_arb_ptr;
-
 /* This is a mask that can be OR'ed */
 #define VGA_ARB_RSRC_NONE       0
 #define VGA_ARB_RSRC_LEGACY_IO  1
@@ -493,9 +488,14 @@ typedef struct {
 #define VGA_ARB_RSRC_NORMAL_IO  4
 #define VGA_ARB_RSRC_NORMAL_MEM 8
 
+typedef struct {
+    int fd;
+    VgaArbRsrcType rsrc;
+} vga_arb_rec, *vga_arb_ptr;
+
 /*
- * All functions, except vga_arb_trylock(), return 1 on success and 0 if
- * something went wrong.
+ * With exception of vga_arb_trylock(), all functions bellow return 1 on success
+ * and 0 if something goes wrong.
  * vga_arb_trylock returns 1 on success, 0 if the lock failed and -1 if
  * something went wrong.
  *
@@ -503,25 +503,14 @@ typedef struct {
  * checks for these errors but they should never happen, and when they happen
  * it will print error messages at stderr.
  *
- * To understand the way these functions work see test/test2lib.c.
  */
-
-
-int vga_arb_set_target (vga_arb_ptr vgaDev, unsigned int domain,
+int  pci_device_vgaarb_init    (vga_arb_ptr *vgaDev);
+void pci_device_vgaarb_fini    (vga_arb_ptr vgaDev);
+int  pci_device_vgaarb_set_target (vga_arb_ptr vgaDev, unsigned int domain,
                         unsigned int bus, unsigned int dev, unsigned int fn);
-
-int vga_arb_read    (vga_arb_ptr vgaDev);
-
-int vga_arb_lock    (vga_arb_ptr vgaDev);
-
-int vga_arb_trylock (vga_arb_ptr vgaDev);
-
-int vga_arb_unlock  (vga_arb_ptr vgaDev);
-
-int vga_arb_decodes (vga_arb_ptr vgaDev);
-
-int vga_arb_init    (vga_arb_ptr *vgaDev);
-
-void vga_arb_fini   (vga_arb_ptr vgaDev);
+int  pci_device_vgaarb_decodes (vga_arb_ptr vgaDev);
+int  pci_device_vgaarb_lock    (vga_arb_ptr vgaDev);
+int  pci_device_vgaarb_trylock (vga_arb_ptr vgaDev);
+int  pci_device_vgaarb_unlock  (vga_arb_ptr vgaDev);
 
 #endif /* PCIACCESS_H */
