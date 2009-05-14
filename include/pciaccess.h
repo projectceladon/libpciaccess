@@ -377,8 +377,8 @@ struct pci_device {
     intptr_t user_data;
 
     /**
-      * Used by the VGA arbiter. Kind of resource decoded by the device and
-      * the file descriptor. */
+      * Used by the VGA arbiter. Type of resource decoded by the device and
+      * the file descriptor (/dev/vga_arbiter). */
     int vgaarb_rsrc;
     int vgaarb_fd;
 };
@@ -493,17 +493,6 @@ struct pci_pcmcia_bridge_info {
 #define VGA_ARB_RSRC_NORMAL_IO  0x04
 #define VGA_ARB_RSRC_NORMAL_MEM 0x08
 
-/*
- * With exception of vga_arb_trylock(), all functions bellow return 1 on success
- * and 0 if something goes wrong.
- * vga_arb_trylock returns 1 on success, 0 if the lock failed and -1 if
- * something went wrong.
- *
- * But I really don't think you should be checking the return values. The lib
- * checks for these errors but they should never happen, and when they happen
- * it will print error messages at stderr.
- *
- */
 int  pci_device_vgaarb_init         (struct pci_device *dev);
 void pci_device_vgaarb_fini         (struct pci_device *dev);
 int  pci_device_vgaarb_set_target   (struct pci_device *dev);

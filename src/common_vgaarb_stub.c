@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2007 Paulo R. Zanoni, Tiago Vignatti
+ * Copyright (c) 2009 Tiago Vignatti
  *
  * Permission is hereby granted, free of charge, to any person
  * obtaining a copy of this software and associated documentation
@@ -24,54 +24,50 @@
  *
  */
 
-#ifdef HAVE_CONFIG_H
-#include <config.h>
-#endif
-
 #include <stdio.h>
 #include "pciaccess.h"
-
-
-int
-pci_device_vgaarb_target(struct pci_device *dev)
-{
-    return 1;
-}
-
-int
-pci_device_vgaarb_lock(struct pci_device *dev)
-{
-    return 1;
-}
-
-int
-pci_device_vgaarb_trylock(struct pci_device *dev)
-{
-    return 1;
-}
-
-int
-pci_device_vgaarb_unlock(struct pci_device *dev)
-{
-    return 1;
-}
-
-int
-pci_device_vgaarb_decodes(struct pci_device *dev)
-{
-    return 1;
-}
 
 int
 pci_device_vgaarb_init(struct pci_device *dev)
 {
 #ifdef DEBUG
-    fprintf(stderr, "%s: YOU'RE USING THE STUB FUNCTIONS!\n", __FUNCTION__);
+    fprintf(stderr, "%s: You're using VGA arbiter stub functions!\n",
+                                                            __FUNCTION__);
 #endif
-    return 1;
+    return 0;
 }
 
 void
 pci_device_vgaarb_fini(struct pci_device *dev)
 {
+}
+
+int
+pci_device_vgaarb_set_target(struct pci_device *dev)
+{
+    return 0;
+}
+
+int
+pci_device_vgaarb_decodes(struct pci_device *dev)
+{
+    return 0;
+}
+
+int
+pci_device_vgaarb_lock(struct pci_device *dev)
+{
+    return 0;
+}
+
+int
+pci_device_vgaarb_trylock(struct pci_device *dev)
+{
+    return 0;
+}
+
+int
+pci_device_vgaarb_unlock(struct pci_device *dev)
+{
+    return 0;
 }

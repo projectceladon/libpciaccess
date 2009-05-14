@@ -25,33 +25,23 @@
  *
  */
 
-#ifdef HAVE_CONFIG_H
-#include <config.h>
-#endif
-
-#include <string.h>
 #include <stdio.h>
-#include <stdlib.h>
 #include <unistd.h>
-#include <sys/types.h>
-#include <sys/stat.h>
 #include <fcntl.h>
 #include <errno.h>
 
 #include "pciaccess.h"
 
-/* ALL messages *should* fit in this buffer */
-#define BUFSIZE 128
-#define VGAARB_DEV "/dev/vga_arbiter"
+#define BUFSIZE 32
 
 int
 pci_device_vgaarb_init(struct pci_device *dev)
 {
     dev->vgaarb_rsrc = VGA_ARB_RSRC_NONE;
 
-    if ((dev->vgaarb_fd = open (VGAARB_DEV, O_RDWR)) < 0) {
-        perror("device open failed");
-        return 1;
+    if ((dev->vgaarb_fd = open ("/dev/vga_arbiter", O_RDWR)) < 0) {
+        fprintf(stderr, "device open failed");
+        return errno;
     }
 
     return 0;
@@ -60,49 +50,50 @@ pci_device_vgaarb_init(struct pci_device *dev)
 void
 pci_device_vgaarb_fini(struct pci_device *dev)
 {
-    if (close(dev->vgaarb_fd) == -1)
-        perror("device close failed");
+    if (close(dev->vgaarb_fd) != 0)
+        fprintf(stderr, "device close failed");
 }
 
-/*
- * Writes the message on the device.
+/**
+ * Writes messages on vga device. The messages is defined by the kernel
+ * implementation.
  *
- * Returns: 0 if something went wrong
- *      1 if everything is ok
- *      2 if the device returned EBUSY (used ONLY by trylock)
+ * \param fd    vga arbiter device.
+ * \param buf   message itself.
+ * \param len   message length.
+ *
+ * \return
+ * Zero on success, 1 if something gets wrong and 2 if fd is busy (only for
+ * 'trylock')
  */
 static int
 vgaarb_write(int fd, char *buf, int len)
 {
     int ret;
 
-    /* Just to make sure... */
+
     buf[len] = '\0';
 
     ret = write(fd, buf, len);
-
     if (ret == -1) {
-       /* Check for EBUSY: the user may have called "trylock" and didn't get
-         * the lock. */
+        /* the user may have called "trylock" and didn't get the lock */
         if (errno == EBUSY)
             return 2;
 
-        perror("write error");
-        return 0;
+        fprintf(stderr, "write error");
+        return 1;
     }
     else if (ret != len) {
-        /* The VGA arbiter implementation shouldn't receive less than one
-         * single message. It also shouldn't receive more. */
-        fprintf(stderr, "%s: write error: "
-                "wrote less than expected\n", __FUNCTION__);
-        return 0;
+        /* it's need to receive the exactly amount required. */
+        fprintf(stderr, "write error: wrote different than expected\n");
+        return 1;
     }
 
 #ifdef DEBUG
     fprintf(stderr, "%s: successfully wrote: '%s'\n", __FUNCTION__, buf);
 #endif
 
-    return 1;
+    return 0;
 }
 
 static const char *
@@ -119,35 +110,7 @@ rsrc_to_str(int iostate)
 
     return "none";
 }
-#if 0
-int
-vga_arb_read(vga_arb_ptr vgaDev)
-{
-    int ret;
-    char buf[BUFSIZE];
 
-
-    ret = read (vgaDev->fd, buf, BUFSIZE);
-
-    /* Just to make sure... */
-    buf[ret]='\0';
-
-    if (ret == 0) {
-    /* It always has something to be read. */
-    fprintf(stderr, "%s: error: there is nothing to read\n", __FUNCTION__);
-    return 0;
-    }
-    else if (ret == -1) {
-    perror("read error");
-    return 0;
-    }
-
-#ifdef DEBUG
-    fprintf(stderr, "%s: sucessfully read: '%s'\n", __FUCNTION__, buf);
-#endif
-    return 1;
-}
-#endif
 int
 pci_device_vgaarb_set_target(struct pci_device *dev)
 {
@@ -185,20 +148,12 @@ pci_device_vgaarb_lock(struct pci_device *dev)
 int
 pci_device_vgaarb_trylock(struct pci_device *dev)
 {
-    int len, write_ret;
+    int len;
     char buf[BUFSIZE];
 
     len = snprintf(buf, BUFSIZE, "trylock %s", rsrc_to_str(dev->vgaarb_rsrc));
 
-    write_ret = vgaarb_write(dev->vgaarb_fd, buf, len);
-
-    if (write_ret == 0)
-        return -1;
-    else if (write_ret == 1)
-        return 1;
-    else
-        /* write_ret == 2 and the lock failed */
-        return 0;
+    return vgaarb_write(dev->vgaarb_fd, buf, len);
 }
 
 int
