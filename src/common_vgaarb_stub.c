@@ -33,37 +33,37 @@
 
 
 int
-vga_arb_set_target(struct pci_device *dev)
+pci_device_vgaarb_target(struct pci_device *dev)
 {
     return 1;
 }
 
 int
-vga_arb_lock(struct pci_device *dev)
+pci_device_vgaarb_lock(struct pci_device *dev)
 {
     return 1;
 }
 
 int
-vga_arb_trylock(struct pci_device *dev)
+pci_device_vgaarb_trylock(struct pci_device *dev)
 {
     return 1;
 }
 
 int
-vga_arb_unlock(struct pci_device *dev)
+pci_device_vgaarb_unlock(struct pci_device *dev)
 {
     return 1;
 }
 
 int
-vga_arb_decodes(struct pci_device *dev)
+pci_device_vgaarb_decodes(struct pci_device *dev)
 {
     return 1;
 }
 
 int
-vga_arb_init(struct pci_device *dev)
+pci_device_vgaarb_init(struct pci_device *dev)
 {
 #ifdef DEBUG
     fprintf(stderr, "%s: YOU'RE USING THE STUB FUNCTIONS!\n", __FUNCTION__);
@@ -72,6 +72,6 @@ vga_arb_init(struct pci_device *dev)
 }
 
 void
-vga_arb_fini(struct pci_device *dev)
+pci_device_vgaarb_fini(struct pci_device *dev)
 {
 }
