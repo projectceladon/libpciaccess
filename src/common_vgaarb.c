@@ -55,7 +55,7 @@ pci_device_vgaarb_fini(struct pci_device *dev)
 }
 
 /**
- * Writes messages on vga device. The messages is defined by the kernel
+ * Writes message on vga device. The messages are defined by the kernel
  * implementation.
  *
  * \param fd    vga arbiter device.
