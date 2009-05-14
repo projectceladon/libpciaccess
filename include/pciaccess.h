@@ -375,6 +375,12 @@ struct pci_device {
      * the \c pci_device structure.
      */
     intptr_t user_data;
+
+    /**
+      * Used by the VGA arbiter. Kind of resource decoded by the device and
+      * the file descriptor. */
+    int vgaarb_rsrc;
+    int vgaarb_fd;
 };
 
 
@@ -479,19 +485,13 @@ struct pci_pcmcia_bridge_info {
  * VGA Arbiter definitions, functions and related.
  */
 
-typedef int VgaArbRsrcType;
-
-/* This is a mask that can be OR'ed */
-#define VGA_ARB_RSRC_NONE       0
-#define VGA_ARB_RSRC_LEGACY_IO  1
-#define VGA_ARB_RSRC_LEGACY_MEM 2
-#define VGA_ARB_RSRC_NORMAL_IO  4
-#define VGA_ARB_RSRC_NORMAL_MEM 8
-
-typedef struct {
-    int fd;
-    VgaArbRsrcType rsrc;
-} vga_arb_rec, *vga_arb_ptr;
+/* Legacy VGA regions */
+#define VGA_ARB_RSRC_NONE       0x00
+#define VGA_ARB_RSRC_LEGACY_IO  0x01
+#define VGA_ARB_RSRC_LEGACY_MEM 0x02
+/* Non-legacy access */
+#define VGA_ARB_RSRC_NORMAL_IO  0x04
+#define VGA_ARB_RSRC_NORMAL_MEM 0x08
 
 /*
  * With exception of vga_arb_trylock(), all functions bellow return 1 on success
@@ -504,13 +504,12 @@ typedef struct {
  * it will print error messages at stderr.
  *
  */
-int  pci_device_vgaarb_init    (vga_arb_ptr *vgaDev);
-void pci_device_vgaarb_fini    (vga_arb_ptr vgaDev);
-int  pci_device_vgaarb_set_target (vga_arb_ptr vgaDev, unsigned int domain,
-                        unsigned int bus, unsigned int dev, unsigned int fn);
-int  pci_device_vgaarb_decodes (vga_arb_ptr vgaDev);
-int  pci_device_vgaarb_lock    (vga_arb_ptr vgaDev);
-int  pci_device_vgaarb_trylock (vga_arb_ptr vgaDev);
-int  pci_device_vgaarb_unlock  (vga_arb_ptr vgaDev);
+int  pci_device_vgaarb_init         (struct pci_device *dev);
+void pci_device_vgaarb_fini         (struct pci_device *dev);
+int  pci_device_vgaarb_set_target   (struct pci_device *dev);
+int  pci_device_vgaarb_decodes      (struct pci_device *dev);
+int  pci_device_vgaarb_lock         (struct pci_device *dev);
+int  pci_device_vgaarb_trylock      (struct pci_device *dev);
+int  pci_device_vgaarb_unlock       (struct pci_device *dev);
 
 #endif /* PCIACCESS_H */

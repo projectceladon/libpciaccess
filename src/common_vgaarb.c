@@ -45,28 +45,22 @@
 #define VGAARB_DEV "/dev/vga_arbiter"
 
 int
-pci_device_vgaarb_init(vga_arb_ptr *vgaDev)
+pci_device_vgaarb_init(struct pci_device *dev)
 {
-    *vgaDev = malloc (sizeof(vga_arb_ptr *));
-    if (vgaDev == NULL) {
-        fprintf(stderr, "%s: malloc: couldn't allocate memory\n", __FUNCTION__);
-        return 0;
-    }
+    dev->vgaarb_rsrc = VGA_ARB_RSRC_NONE;
 
-    (*vgaDev)->rsrc = 0;
-
-    if (((*vgaDev)->fd = open (VGAARB_DEV, O_RDWR)) < 0) {
+    if ((dev->vgaarb_fd = open (VGAARB_DEV, O_RDWR)) < 0) {
         perror("device open failed");
-        return 0;
+        return 1;
     }
 
-    return (*vgaDev)->fd;
+    return 0;
 }
 
 void
-pci_device_vgaarb_fini(vga_arb_ptr vgaDev)
+pci_device_vgaarb_fini(struct pci_device *dev)
 {
-    if (close(vgaDev->fd) == -1)
+    if (close(dev->vgaarb_fd) == -1)
         perror("device close failed");
 }
 
@@ -112,7 +106,7 @@ vgaarb_write(int fd, char *buf, int len)
 }
 
 static const char *
-rsrc_to_str(VgaArbRsrcType iostate)
+rsrc_to_str(int iostate)
 {
     switch (iostate) {
     case VGA_ARB_RSRC_LEGACY_IO | VGA_ARB_RSRC_LEGACY_MEM:
@@ -155,49 +149,48 @@ vga_arb_read(vga_arb_ptr vgaDev)
 }
 #endif
 int
-pci_device_vgaarb_set_target(vga_arb_ptr vgaDev, unsigned int domain,
-                unsigned int bus, unsigned int dev, unsigned int fn)
+pci_device_vgaarb_set_target(struct pci_device *dev)
 {
     int len;
     char buf[BUFSIZE];
 
     len = snprintf(buf, BUFSIZE, "target PCI:%d:%d:%d.%d",
-                   domain, bus, dev, fn);
+                   dev->domain, dev->bus, dev->dev, dev->func);
 
-    return vgaarb_write(vgaDev->fd, buf, len);
+    return vgaarb_write(dev->vgaarb_fd, buf, len);
 }
 
 int
-pci_device_vgaarb_decodes(vga_arb_ptr vgaDev)
+pci_device_vgaarb_decodes(struct pci_device *dev)
 {
     int len;
     char buf[BUFSIZE];
 
-    len = snprintf(buf, BUFSIZE, "decodes %s", rsrc_to_str(vgaDev->rsrc));
+    len = snprintf(buf, BUFSIZE, "decodes %s", rsrc_to_str(dev->vgaarb_rsrc));
 
-    return vgaarb_write(vgaDev->fd, buf, len);
+    return vgaarb_write(dev->vgaarb_fd, buf, len);
 }
 
 int
-pci_device_vgaarb_lock(vga_arb_ptr vgaDev)
+pci_device_vgaarb_lock(struct pci_device *dev)
 {
     int len;
     char buf[BUFSIZE];
 
-    len = snprintf(buf, BUFSIZE, "lock %s", rsrc_to_str(vgaDev->rsrc));
+    len = snprintf(buf, BUFSIZE, "lock %s", rsrc_to_str(dev->vgaarb_rsrc));
 
-    return vgaarb_write(vgaDev->fd, buf, len);
+    return vgaarb_write(dev->vgaarb_fd, buf, len);
 }
 
 int
-pci_device_vgaarb_trylock(vga_arb_ptr vgaDev)
+pci_device_vgaarb_trylock(struct pci_device *dev)
 {
     int len, write_ret;
     char buf[BUFSIZE];
 
-    len = snprintf(buf, BUFSIZE, "trylock %s", rsrc_to_str(vgaDev->rsrc));
+    len = snprintf(buf, BUFSIZE, "trylock %s", rsrc_to_str(dev->vgaarb_rsrc));
 
-    write_ret = vgaarb_write(vgaDev->fd, buf, len);
+    write_ret = vgaarb_write(dev->vgaarb_fd, buf, len);
 
     if (write_ret == 0)
         return -1;
@@ -209,12 +202,12 @@ pci_device_vgaarb_trylock(vga_arb_ptr vgaDev)
 }
 
 int
-pci_device_vgaarb_unlock(vga_arb_ptr vgaDev)
+pci_device_vgaarb_unlock(struct pci_device *dev)
 {
     int len;
     char buf[BUFSIZE];
 
-    len = snprintf(buf, BUFSIZE, "unlock %s", rsrc_to_str(vgaDev->rsrc));
+    len = snprintf(buf, BUFSIZE, "unlock %s", rsrc_to_str(dev->vgaarb_rsrc));
 
-    return vgaarb_write(vgaDev->fd, buf, len);
+    return vgaarb_write(dev->vgaarb_fd, buf, len);
 }
