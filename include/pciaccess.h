@@ -380,7 +380,6 @@ struct pci_device {
       * Used by the VGA arbiter. Type of resource decoded by the device and
       * the file descriptor (/dev/vga_arbiter). */
     int vgaarb_rsrc;
-    int vgaarb_fd;
 };
 
 
@@ -493,8 +492,8 @@ struct pci_pcmcia_bridge_info {
 #define VGA_ARB_RSRC_NORMAL_IO  0x04
 #define VGA_ARB_RSRC_NORMAL_MEM 0x08
 
-int  pci_device_vgaarb_init         (struct pci_device *dev);
-void pci_device_vgaarb_fini         (struct pci_device *dev);
+int  pci_device_vgaarb_init         (void);
+void pci_device_vgaarb_fini         (void);
 int  pci_device_vgaarb_set_target   (struct pci_device *dev);
 int  pci_device_vgaarb_decodes      (struct pci_device *dev);
 int  pci_device_vgaarb_lock         (struct pci_device *dev);

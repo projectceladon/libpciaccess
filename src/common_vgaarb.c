@@ -26,20 +26,20 @@
  */
 
 #include <stdio.h>
+#include <string.h>
 #include <unistd.h>
 #include <fcntl.h>
 #include <errno.h>
 
 #include "pciaccess.h"
+#include "pciaccess_private.h"
 
 #define BUFSIZE 32
 
 int
-pci_device_vgaarb_init(struct pci_device *dev)
+pci_device_vgaarb_init(void)
 {
-    dev->vgaarb_rsrc = VGA_ARB_RSRC_NONE;
-
-    if ((dev->vgaarb_fd = open ("/dev/vga_arbiter", O_RDWR)) < 0) {
+    if ((pci_sys->vgaarb_fd = open ("/dev/vga_arbiter", O_RDWR)) < 0) {
         fprintf(stderr, "device open failed");
         return errno;
     }
@@ -48,9 +48,9 @@ pci_device_vgaarb_init(struct pci_device *dev)
 }
 
 void
-pci_device_vgaarb_fini(struct pci_device *dev)
+pci_device_vgaarb_fini(void)
 {
-    if (close(dev->vgaarb_fd) != 0)
+    if (close(pci_sys->vgaarb_fd) != 0)
         fprintf(stderr, "device close failed");
 }
 
@@ -96,6 +96,35 @@ vgaarb_write(int fd, char *buf, int len)
     return 0;
 }
 
+static int
+parse_string_to_decodes_rsrc(char *input)
+{
+    char *tok;
+
+    tok = strtok(input, ",");
+    if (!tok)
+	goto fail;
+
+    tok = strtok(NULL, ",");
+    if (!tok)
+	goto fail;
+    tok = strtok(tok, "=");
+    if (!tok)
+	goto fail;
+    tok = strtok(NULL, "=");
+    if (!tok)
+	goto fail;
+
+    if (!strncmp(tok, "io+mem", 6))
+    	return VGA_ARB_RSRC_LEGACY_IO | VGA_ARB_RSRC_LEGACY_MEM;
+    if (!strncmp(tok, "io", 2))
+    	return VGA_ARB_RSRC_LEGACY_IO;
+    if (!strncmp(tok, "mem", 3))
+    	return VGA_ARB_RSRC_LEGACY_MEM;
+fail:
+    return VGA_ARB_RSRC_NONE;
+}
+
 static const char *
 rsrc_to_str(int iostate)
 {
@@ -116,11 +145,21 @@ pci_device_vgaarb_set_target(struct pci_device *dev)
 {
     int len;
     char buf[BUFSIZE];
+    int ret;
 
     len = snprintf(buf, BUFSIZE, "target PCI:%d:%d:%d.%d",
                    dev->domain, dev->bus, dev->dev, dev->func);
 
-    return vgaarb_write(dev->vgaarb_fd, buf, len);
+    ret = vgaarb_write(pci_sys->vgaarb_fd, buf, len);
+    if (ret)
+	return ret;
+
+    ret = read(pci_sys->vgaarb_fd, buf, BUFSIZE);
+    if (ret <= 0)
+	return -1;
+
+    dev->vgaarb_rsrc = parse_string_to_decodes_rsrc(buf);
+    return 0;
 }
 
 int
@@ -131,7 +170,7 @@ pci_device_vgaarb_decodes(struct pci_device *dev)
 
     len = snprintf(buf, BUFSIZE, "decodes %s", rsrc_to_str(dev->vgaarb_rsrc));
 
-    return vgaarb_write(dev->vgaarb_fd, buf, len);
+    return vgaarb_write(pci_sys->vgaarb_fd, buf, len);
 }
 
 int
@@ -142,7 +181,7 @@ pci_device_vgaarb_lock(struct pci_device *dev)
 
     len = snprintf(buf, BUFSIZE, "lock %s", rsrc_to_str(dev->vgaarb_rsrc));
 
-    return vgaarb_write(dev->vgaarb_fd, buf, len);
+    return vgaarb_write(pci_sys->vgaarb_fd, buf, len);
 }
 
 int
@@ -153,7 +192,7 @@ pci_device_vgaarb_trylock(struct pci_device *dev)
 
     len = snprintf(buf, BUFSIZE, "trylock %s", rsrc_to_str(dev->vgaarb_rsrc));
 
-    return vgaarb_write(dev->vgaarb_fd, buf, len);
+    return vgaarb_write(pci_sys->vgaarb_fd, buf, len);
 }
 
 int
@@ -164,5 +203,5 @@ pci_device_vgaarb_unlock(struct pci_device *dev)
 
     len = snprintf(buf, BUFSIZE, "unlock %s", rsrc_to_str(dev->vgaarb_rsrc));
 
-    return vgaarb_write(dev->vgaarb_fd, buf, len);
+    return vgaarb_write(pci_sys->vgaarb_fd, buf, len);
 }

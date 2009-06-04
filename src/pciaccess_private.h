@@ -131,6 +131,7 @@ struct pci_system {
 #ifdef HAVE_MTRR
     int mtrr_fd;
 #endif
+    int vgaarb_fd;
 };
 
 extern struct pci_system * pci_sys;
