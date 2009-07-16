@@ -76,6 +76,7 @@ static int pci_device_linux_sysfs_write( struct pci_device * dev,
     pciaddr_t * bytes_written );
 
 static int pci_device_linux_sysfs_boot_vga( struct pci_device * dev );
+static int pci_device_linux_sysfs_has_kernel_driver(struct pci_device *dev);
 
 static const struct pci_system_methods linux_sysfs_methods = {
     .destroy = NULL,
@@ -91,6 +92,7 @@ static const struct pci_system_methods linux_sysfs_methods = {
     .fill_capabilities = pci_fill_capabilities_generic,
     .enable = pci_device_linux_sysfs_enable,
     .boot_vga = pci_device_linux_sysfs_boot_vga,
+    .has_kernel_driver = pci_device_linux_sysfs_has_kernel_driver,
 };
 
 #define SYS_BUS_PCI "/sys/bus/pci/devices"
@@ -728,4 +730,23 @@ static int pci_device_linux_sysfs_boot_vga(struct pci_device *dev)
 out:
     close(fd);
     return ret;
+}
+
+static int pci_device_linux_sysfs_has_kernel_driver(struct pci_device *dev)
+{
+    char name[256];
+    struct stat dummy;
+    int ret;
+
+    snprintf( name, 255, "%s/%04x:%02x:%02x.%1u/driver",
+	      SYS_BUS_PCI,
+	      dev->domain,
+	      dev->bus,
+	      dev->dev,
+	      dev->func );
+    
+    ret = stat(name, &dummy);
+    if (ret < 0)
+	return 0;
+    return 1;
 }

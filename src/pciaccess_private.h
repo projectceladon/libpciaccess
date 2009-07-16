@@ -61,6 +61,7 @@ struct pci_system_methods {
     int (*fill_capabilities)( struct pci_device * dev );
     void (*enable)( struct pci_device *dev );
     int (*boot_vga)( struct pci_device *dev );
+    int (*has_kernel_driver)( struct pci_device *dev );
 };
 
 struct pci_device_mapping {
