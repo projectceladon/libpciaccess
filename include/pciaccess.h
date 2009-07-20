@@ -497,7 +497,7 @@ struct pci_pcmcia_bridge_info {
 int  pci_device_vgaarb_init         (void);
 void pci_device_vgaarb_fini         (void);
 int  pci_device_vgaarb_set_target   (struct pci_device *dev);
-int  pci_device_vgaarb_decodes      (struct pci_device *dev);
+int  pci_device_vgaarb_decodes      (struct pci_device *dev, int new_vga_rsrc);
 int  pci_device_vgaarb_lock         (struct pci_device *dev);
 int  pci_device_vgaarb_trylock      (struct pci_device *dev);
 int  pci_device_vgaarb_unlock       (struct pci_device *dev);

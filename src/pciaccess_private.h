@@ -133,6 +133,7 @@ struct pci_system {
     int mtrr_fd;
 #endif
     int vgaarb_fd;
+    int vga_count;
 };
 
 extern struct pci_system * pci_sys;

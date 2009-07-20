@@ -30,11 +30,13 @@
 #include <unistd.h>
 #include <fcntl.h>
 #include <errno.h>
+#include <stdlib.h>
+#include <limits.h>
 
 #include "pciaccess.h"
 #include "pciaccess_private.h"
 
-#define BUFSIZE 32
+#define BUFSIZE 64
 
 int
 pci_device_vgaarb_init(void)
@@ -97,9 +99,28 @@ vgaarb_write(int fd, char *buf, int len)
 }
 
 static int
-parse_string_to_decodes_rsrc(char *input)
+parse_string_to_decodes_rsrc(char *input, int *vga_count)
 {
     char *tok;
+    char count[16];
+
+    strncpy(count, input, 10);
+    count[11] = 0;
+
+    tok = strtok(count,":");
+    if (!tok)
+	goto fail;
+    tok = strtok(NULL, "");
+    if (!tok)
+	goto fail;
+
+    *vga_count = strtoul(tok, NULL, 10);
+    if (*vga_count == LONG_MAX)
+	goto fail;
+
+#ifdef DEBUG
+    fprintf(stderr,"vga count is %d\n", *vga_count);
+#endif
 
     tok = strtok(input, ",");
     if (!tok)
@@ -158,19 +179,25 @@ pci_device_vgaarb_set_target(struct pci_device *dev)
     if (ret <= 0)
 	return -1;
 
-    dev->vgaarb_rsrc = parse_string_to_decodes_rsrc(buf);
+    dev->vgaarb_rsrc = parse_string_to_decodes_rsrc(buf, &pci_sys->vga_count);
     return 0;
 }
 
 int
-pci_device_vgaarb_decodes(struct pci_device *dev)
+pci_device_vgaarb_decodes(struct pci_device *dev, int new_vgaarb_rsrc)
 {
     int len;
     char buf[BUFSIZE];
+    int ret;
+
+    if (dev->vgaarb_rsrc == new_vgaarb_rsrc)
+	return 0;
 
     len = snprintf(buf, BUFSIZE, "decodes %s", rsrc_to_str(dev->vgaarb_rsrc));
-
-    return vgaarb_write(pci_sys->vgaarb_fd, buf, len);
+    ret = vgaarb_write(pci_sys->vgaarb_fd, buf, len);
+    if (ret == 0)
+        dev->vgaarb_rsrc = new_vgaarb_rsrc;
+    return ret;
 }
 
 int
@@ -178,6 +205,9 @@ pci_device_vgaarb_lock(struct pci_device *dev)
 {
     int len;
     char buf[BUFSIZE];
+
+    if (dev->vgaarb_rsrc == 0 || pci_sys->vga_count == 1)
+        return 0;
 
     len = snprintf(buf, BUFSIZE, "lock %s", rsrc_to_str(dev->vgaarb_rsrc));
 
@@ -190,6 +220,9 @@ pci_device_vgaarb_trylock(struct pci_device *dev)
     int len;
     char buf[BUFSIZE];
 
+    if (dev->vgaarb_rsrc == 0 || pci_sys->vga_count == 1)
+        return 0;
+
     len = snprintf(buf, BUFSIZE, "trylock %s", rsrc_to_str(dev->vgaarb_rsrc));
 
     return vgaarb_write(pci_sys->vgaarb_fd, buf, len);
@@ -200,6 +233,9 @@ pci_device_vgaarb_unlock(struct pci_device *dev)
 {
     int len;
     char buf[BUFSIZE];
+
+    if (dev->vgaarb_rsrc == 0 || pci_sys->vga_count == 1)
+        return 0;
 
     len = snprintf(buf, BUFSIZE, "unlock %s", rsrc_to_str(dev->vgaarb_rsrc));
 
