@@ -42,7 +42,6 @@ int
 pci_device_vgaarb_init(void)
 {
     if ((pci_sys->vgaarb_fd = open ("/dev/vga_arbiter", O_RDWR)) < 0) {
-        fprintf(stderr, "device open failed");
         return errno;
     }
 
@@ -52,8 +51,7 @@ pci_device_vgaarb_init(void)
 void
 pci_device_vgaarb_fini(void)
 {
-    if (close(pci_sys->vgaarb_fd) != 0)
-        fprintf(stderr, "device close failed");
+    close(pci_sys->vgaarb_fd);
 }
 
 /**
@@ -82,12 +80,16 @@ vgaarb_write(int fd, char *buf, int len)
         if (errno == EBUSY)
             return 2;
 
+#ifdef DEBUG
         fprintf(stderr, "write error");
+#endif
         return 1;
     }
     else if (ret != len) {
         /* it's need to receive the exactly amount required. */
+#ifdef DEBUG
         fprintf(stderr, "write error: wrote different than expected\n");
+#endif
         return 1;
     }
 
