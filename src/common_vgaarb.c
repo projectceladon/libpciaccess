@@ -38,13 +38,98 @@
 
 #define BUFSIZE 64
 
+static int
+parse_string_to_decodes_rsrc(char *input, int *vga_count, struct pci_slot_match *match)
+{
+    char *tok;
+    char count[16];
+
+    strncpy(count, input, 10);
+    count[11] = 0;
+
+    tok = strtok(count,":");
+    if (!tok)
+	goto fail;
+    tok = strtok(NULL, "");
+    if (!tok)
+	goto fail;
+
+    *vga_count = strtoul(tok, NULL, 10);
+    if (*vga_count == LONG_MAX)
+	goto fail;
+
+#ifdef DEBUG
+    fprintf(stderr,"vga count is %d\n", *vga_count);
+#endif
+
+    tok = strtok(input, ",");
+    if (!tok)
+	goto fail;
+
+    if (match) {
+	tok = strtok(NULL, ":");
+    	if (!tok)
+ 	    goto fail;
+	match->domain = strtoul(tok, NULL, 16);
+
+	tok = strtok(NULL, ":");
+    	if (!tok)
+ 	    goto fail;
+	match->bus = strtoul(tok, NULL, 16);
+
+	tok = strtok(NULL, ".");
+    	if (!tok)
+ 	    goto fail;
+	match->dev = strtoul(tok, NULL, 16);
+
+	tok = strtok(NULL, ".");
+    	if (!tok)
+ 	    goto fail;
+	match->func = strtoul(tok, NULL, 16);
+    }
+
+    tok = strtok(NULL, ",");
+    if (!tok)
+	goto fail;
+    tok = strtok(tok, "=");
+    if (!tok)
+	goto fail;
+    tok = strtok(NULL, "=");
+    if (!tok)
+	goto fail;
+
+    if (!strncmp(tok, "io+mem", 6))
+    	return VGA_ARB_RSRC_LEGACY_IO | VGA_ARB_RSRC_LEGACY_MEM;
+    if (!strncmp(tok, "io", 2))
+    	return VGA_ARB_RSRC_LEGACY_IO;
+    if (!strncmp(tok, "mem", 3))
+    	return VGA_ARB_RSRC_LEGACY_MEM;
+fail:
+    return VGA_ARB_RSRC_NONE;
+}
+
 int
 pci_device_vgaarb_init(void)
 {
+    struct pci_slot_match match;
+    char buf[BUFSIZE];
+    int ret, rsrc;
     if ((pci_sys->vgaarb_fd = open ("/dev/vga_arbiter", O_RDWR)) < 0) {
         return errno;
     }
 
+    ret = read(pci_sys->vgaarb_fd, buf, BUFSIZE);
+    if (ret <= 0)
+	return -1;
+
+    memset(&match, 0xff, sizeof(match));
+    /* need to find the device to go back to and what it was decoding */
+    rsrc = parse_string_to_decodes_rsrc(buf, &pci_sys->vga_count, &match);
+    
+    pci_sys->vga_default_dev = pci_device_find_by_slot(match.domain, match.bus, match.dev, match.func);
+    
+    if (pci_sys->vga_default_dev)
+        pci_sys->vga_default_dev->vgaarb_rsrc = rsrc;
     return 0;
 }
 
@@ -100,53 +185,6 @@ vgaarb_write(int fd, char *buf, int len)
     return 0;
 }
 
-static int
-parse_string_to_decodes_rsrc(char *input, int *vga_count)
-{
-    char *tok;
-    char count[16];
-
-    strncpy(count, input, 10);
-    count[11] = 0;
-
-    tok = strtok(count,":");
-    if (!tok)
-	goto fail;
-    tok = strtok(NULL, "");
-    if (!tok)
-	goto fail;
-
-    *vga_count = strtoul(tok, NULL, 10);
-    if (*vga_count == LONG_MAX)
-	goto fail;
-
-#ifdef DEBUG
-    fprintf(stderr,"vga count is %d\n", *vga_count);
-#endif
-
-    tok = strtok(input, ",");
-    if (!tok)
-	goto fail;
-
-    tok = strtok(NULL, ",");
-    if (!tok)
-	goto fail;
-    tok = strtok(tok, "=");
-    if (!tok)
-	goto fail;
-    tok = strtok(NULL, "=");
-    if (!tok)
-	goto fail;
-
-    if (!strncmp(tok, "io+mem", 6))
-    	return VGA_ARB_RSRC_LEGACY_IO | VGA_ARB_RSRC_LEGACY_MEM;
-    if (!strncmp(tok, "io", 2))
-    	return VGA_ARB_RSRC_LEGACY_IO;
-    if (!strncmp(tok, "mem", 3))
-    	return VGA_ARB_RSRC_LEGACY_MEM;
-fail:
-    return VGA_ARB_RSRC_NONE;
-}
 
 static const char *
 rsrc_to_str(int iostate)
@@ -169,13 +207,14 @@ pci_device_vgaarb_set_target(struct pci_device *dev)
     int len;
     char buf[BUFSIZE];
     int ret;
-    int rsrc;
 
     if (!dev)
-        len = snprintf(buf, BUFSIZE, "default");
-    else
-        len = snprintf(buf, BUFSIZE, "target PCI:%d:%d:%d.%d",
-                       dev->domain, dev->bus, dev->dev, dev->func);
+	dev = pci_sys->vga_default_dev;
+    if (!dev)
+	return -1;
+
+    len = snprintf(buf, BUFSIZE, "target PCI:%d:%d:%d.%d",
+                   dev->domain, dev->bus, dev->dev, dev->func);
 
     ret = vgaarb_write(pci_sys->vgaarb_fd, buf, len);
     if (ret)
@@ -185,19 +224,21 @@ pci_device_vgaarb_set_target(struct pci_device *dev)
     if (ret <= 0)
 	return -1;
 
-    rsrc = parse_string_to_decodes_rsrc(buf, &pci_sys->vga_count);
-    if (dev)
-        dev->vgaarb_rsrc = rsrc;
+    dev->vgaarb_rsrc = parse_string_to_decodes_rsrc(buf, &pci_sys->vga_count, NULL);
+    pci_sys->vga_target = dev;
     return 0;
 }
 
 int
-pci_device_vgaarb_decodes(struct pci_device *dev, int new_vgaarb_rsrc)
+pci_device_vgaarb_decodes(int new_vgaarb_rsrc)
 {
     int len;
     char buf[BUFSIZE];
     int ret;
+    struct pci_device *dev = pci_sys->vga_target;
 
+    if (!dev)
+	return -1;
     if (dev->vgaarb_rsrc == new_vgaarb_rsrc)
 	return 0;
 
@@ -209,10 +250,14 @@ pci_device_vgaarb_decodes(struct pci_device *dev, int new_vgaarb_rsrc)
 }
 
 int
-pci_device_vgaarb_lock(struct pci_device *dev)
+pci_device_vgaarb_lock(void)
 {
     int len;
     char buf[BUFSIZE];
+    struct pci_device *dev = pci_sys->vga_target;
+
+    if (!dev)
+	return -1;
 
     if (dev->vgaarb_rsrc == 0 || pci_sys->vga_count == 1)
         return 0;
@@ -223,10 +268,14 @@ pci_device_vgaarb_lock(struct pci_device *dev)
 }
 
 int
-pci_device_vgaarb_trylock(struct pci_device *dev)
+pci_device_vgaarb_trylock(void)
 {
     int len;
     char buf[BUFSIZE];
+    struct pci_device *dev = pci_sys->vga_target;
+
+    if (!dev)
+	return -1;
 
     if (dev->vgaarb_rsrc == 0 || pci_sys->vga_count == 1)
         return 0;
@@ -237,10 +286,14 @@ pci_device_vgaarb_trylock(struct pci_device *dev)
 }
 
 int
-pci_device_vgaarb_unlock(struct pci_device *dev)
+pci_device_vgaarb_unlock(void)
 {
     int len;
     char buf[BUFSIZE];
+    struct pci_device *dev = pci_sys->vga_target;
+
+    if (!dev)
+	return -1;
 
     if (dev->vgaarb_rsrc == 0 || pci_sys->vga_count == 1)
         return 0;

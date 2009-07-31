@@ -134,6 +134,8 @@ struct pci_system {
 #endif
     int vgaarb_fd;
     int vga_count;
+    struct pci_device *vga_target;
+    struct pci_device *vga_default_dev;
 };
 
 extern struct pci_system * pci_sys;
