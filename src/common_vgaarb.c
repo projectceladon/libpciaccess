@@ -169,9 +169,13 @@ pci_device_vgaarb_set_target(struct pci_device *dev)
     int len;
     char buf[BUFSIZE];
     int ret;
+    int rsrc;
 
-    len = snprintf(buf, BUFSIZE, "target PCI:%d:%d:%d.%d",
-                   dev->domain, dev->bus, dev->dev, dev->func);
+    if (!dev)
+        len = snprintf(buf, BUFSIZE, "default");
+    else
+        len = snprintf(buf, BUFSIZE, "target PCI:%d:%d:%d.%d",
+                       dev->domain, dev->bus, dev->dev, dev->func);
 
     ret = vgaarb_write(pci_sys->vgaarb_fd, buf, len);
     if (ret)
@@ -181,7 +185,9 @@ pci_device_vgaarb_set_target(struct pci_device *dev)
     if (ret <= 0)
 	return -1;
 
-    dev->vgaarb_rsrc = parse_string_to_decodes_rsrc(buf, &pci_sys->vga_count);
+    rsrc = parse_string_to_decodes_rsrc(buf, &pci_sys->vga_count);
+    if (dev)
+        dev->vgaarb_rsrc = rsrc;
     return 0;
 }
 
