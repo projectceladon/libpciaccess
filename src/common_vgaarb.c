@@ -42,15 +42,20 @@ static int
 parse_string_to_decodes_rsrc(char *input, int *vga_count, struct pci_slot_match *match)
 {
     char *tok;
-    char count[16];
+    char *input_sp, *count_sp, *pci_sp;
+    char tmp[32];
 
-    strncpy(count, input, 10);
-    count[11] = 0;
-
-    tok = strtok(count,":");
+    tok = strtok_r(input,",",&input_sp);
     if (!tok)
 	goto fail;
-    tok = strtok(NULL, "");
+
+    strncpy(tmp, input, 15);
+    tmp[15] = 0;
+
+    tok = strtok_r(tmp,":",&count_sp);
+    if (!tok)
+	goto fail;
+    tok = strtok_r(NULL, ":",&count_sp);
     if (!tok)
 	goto fail;
 
@@ -62,39 +67,44 @@ parse_string_to_decodes_rsrc(char *input, int *vga_count, struct pci_slot_match 
     fprintf(stderr,"vga count is %d\n", *vga_count);
 #endif
 
-    tok = strtok(input, ",");
+    tok = strtok_r(NULL, ",",&input_sp);
     if (!tok)
 	goto fail;
 
     if (match) {
-	tok = strtok(NULL, ":");
+	strncpy(tmp, tok, 32);
+	tmp[31] = 0;
+	tok = strtok_r(tmp, ":", &pci_sp);
+    	if (!tok)
+ 	    goto fail;
+	tok = strtok_r(NULL, ":", &pci_sp);
     	if (!tok)
  	    goto fail;
 	match->domain = strtoul(tok, NULL, 16);
 
-	tok = strtok(NULL, ":");
+	tok = strtok_r(NULL, ":", &pci_sp);
     	if (!tok)
  	    goto fail;
 	match->bus = strtoul(tok, NULL, 16);
 
-	tok = strtok(NULL, ".");
+	tok = strtok_r(NULL, ".", &pci_sp);
     	if (!tok)
  	    goto fail;
 	match->dev = strtoul(tok, NULL, 16);
 
-	tok = strtok(NULL, ".");
+	tok = strtok_r(NULL, ".", &pci_sp);
     	if (!tok)
  	    goto fail;
 	match->func = strtoul(tok, NULL, 16);
     }
 
-    tok = strtok(NULL, ",");
+    tok = strtok_r(NULL, ",",&input_sp);
     if (!tok)
 	goto fail;
-    tok = strtok(tok, "=");
+    tok = strtok_r(tok, "=", &input_sp);
     if (!tok)
 	goto fail;
-    tok = strtok(NULL, "=");
+    tok = strtok_r(NULL, "=", &input_sp);
     if (!tok)
 	goto fail;
 
@@ -213,7 +223,7 @@ pci_device_vgaarb_set_target(struct pci_device *dev)
     if (!dev)
 	return -1;
 
-    len = snprintf(buf, BUFSIZE, "target PCI:%d:%d:%d.%d",
+    len = snprintf(buf, BUFSIZE, "target PCI:%04x:%02x:%02x.%x",
                    dev->domain, dev->bus, dev->dev, dev->func);
 
     ret = vgaarb_write(pci_sys->vgaarb_fd, buf, len);
