@@ -502,5 +502,7 @@ int  pci_device_vgaarb_decodes      (int new_vga_rsrc);
 int  pci_device_vgaarb_lock         (void);
 int  pci_device_vgaarb_trylock      (void);
 int  pci_device_vgaarb_unlock       (void);
+/* return the current device count + resource decodes for the device */
+int pci_device_vgaarb_get_info	    (struct pci_device *dev, int *vga_count, int *rsrc_decodes);
 
 #endif /* PCIACCESS_H */
