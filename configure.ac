@@ -43,6 +43,14 @@ AC_ARG_WITH(pciids-path, AC_HELP_STRING([--with-pciids-path=PCIIDS_PATH],
 	[Path to pci.ids file]), [pciids_path="$withval"])
 AC_DEFINE_DIR(PCIIDS_PATH, pciids_path, [Path to pci.ids])
 
+AC_ARG_ENABLE(linux-rom-fallback, AS_HELP_STRING([--enable-linux-rom-fallback],
+		[Enable support for falling back to /dev/mem for roms (default: enabled)]),
+		[LINUX_ROM=$enableval],[LINUX_ROM=no])
+
+if test "x$LINUX_ROM" = xyes; then
+	AC_DEFINE(LINUX_ROM, 1, [Linux ROM read fallback])
+fi
+
 use_zlib=no
 AC_ARG_WITH(zlib, AC_HELP_STRING([--with-zlib],
 	[Enable zlib support to read gzip compressed pci.ids]),
