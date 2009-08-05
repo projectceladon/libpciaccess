@@ -325,10 +325,15 @@ pci_device_linux_sysfs_read_rom( struct pci_device * dev, void * buffer )
     
     fd = open( name, O_RDWR );
     if ( fd == -1 ) {
+#ifdef LINUX_ROM
 	/* If reading the ROM using sysfs fails, fall back to the old
 	 * /dev/mem based interface.
+	 * disable this for newer kernels using configure
 	 */
 	return pci_device_linux_devmem_read_rom(dev, buffer);
+#else
+	return errno;
+#endif
     }
 
 
