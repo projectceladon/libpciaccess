@@ -124,6 +124,21 @@ pci_device_is_boot_vga( struct pci_device * dev )
 }
 
 /**
+ * Probe a PCI device to determine if a kernel driver is attached.
+ * 
+ * \param dev Device to query
+ * \return
+ * Zero if no driver attached, 1 if attached kernel drviver
+ */
+int
+pci_device_has_kernel_driver( struct pci_device * dev )
+{
+	if (!pci_sys->methods->has_kernel_driver)
+		return 0;
+	return pci_sys->methods->has_kernel_driver( dev );
+}
+
+/**
  * Probe a PCI device to learn information about the device.
  * 
  * Probes a PCI device to learn various information about the device.  Before
