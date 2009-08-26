@@ -317,7 +317,7 @@ int pci_device_vgaarb_get_info(struct pci_device *dev, int *vga_count, int *rsrc
 {
     *vga_count = pci_sys->vga_count;
     if (!dev)
-        return -1;
+        return 0;
 
     *rsrc_decodes = dev->vgaarb_rsrc;
         return 0;
