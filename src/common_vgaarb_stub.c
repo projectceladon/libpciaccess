@@ -28,46 +28,52 @@
 #include "pciaccess.h"
 
 int
-pci_device_vgaarb_init(struct pci_device *dev)
+pci_device_vgaarb_init(void)
 {
 #ifdef DEBUG
     fprintf(stderr, "%s: You're using VGA arbiter stub functions!\n",
                                                             __FUNCTION__);
 #endif
-    return 0;
+    return -1;
 }
 
 void
-pci_device_vgaarb_fini(struct pci_device *dev)
+pci_device_vgaarb_fini(void)
 {
 }
 
 int
 pci_device_vgaarb_set_target(struct pci_device *dev)
 {
-    return 0;
+    return -1;
 }
 
 int
-pci_device_vgaarb_decodes(struct pci_device *dev)
+pci_device_vgaarb_decodes(int new_vga_rsrc)
+{
+    return -1;
+}
+
+int
+pci_device_vgaarb_lock(void)
+{
+    return -1;
+}
+
+int
+pci_device_vgaarb_trylock(void)
+{
+    return -1;
+}
+
+int
+pci_device_vgaarb_unlock(void);
 {
     return 0;
 }
 
-int
-pci_device_vgaarb_lock(struct pci_device *dev)
+int pci_device_vgaarb_get_info(struct pci_device *dev, int *vga_count,
+			       int *rsrc_decodes)
 {
-    return 0;
-}
-
-int
-pci_device_vgaarb_trylock(struct pci_device *dev)
-{
-    return 0;
-}
-
-int
-pci_device_vgaarb_unlock(struct pci_device *dev)
-{
-    return 0;
+    return -1;
 }
