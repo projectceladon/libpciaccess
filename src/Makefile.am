@@ -47,6 +47,8 @@ endif
 
 if LINUX
 VGA_ARBITER = common_vgaarb.c
+else
+VGA_ARBITER = common_vgaarb_stub.c
 endif
 
 libpciaccess_la_SOURCES = common_bridge.c \
