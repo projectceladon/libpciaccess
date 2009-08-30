@@ -67,7 +67,7 @@ pci_device_vgaarb_trylock(void)
 }
 
 int
-pci_device_vgaarb_unlock(void);
+pci_device_vgaarb_unlock(void)
 {
     return 0;
 }
