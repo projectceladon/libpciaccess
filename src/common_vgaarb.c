@@ -124,6 +124,10 @@ pci_device_vgaarb_init(void)
     struct pci_slot_match match;
     char buf[BUFSIZE];
     int ret, rsrc;
+
+    if (!pci_sys)
+        return -1;
+
     if ((pci_sys->vgaarb_fd = open ("/dev/vga_arbiter", O_RDWR)) < 0) {
         return errno;
     }
