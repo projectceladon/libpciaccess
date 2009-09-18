@@ -213,6 +213,10 @@ populate_entries( struct pci_system * p )
 	}
     }
 
+    for (i = 0; i < n; i++)
+	free(devices[i]);
+    free(devices);
+
     if (err) {
 	free(p->devices);
 	p->devices = NULL;
