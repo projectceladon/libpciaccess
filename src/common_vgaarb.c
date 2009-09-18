@@ -153,9 +153,6 @@ pci_device_vgaarb_fini(void)
     if (!pci_sys)
         return;
 
-    if (!pci_sys->vgaarb_fd)
-        return;
-
     close(pci_sys->vgaarb_fd);
 }
 
