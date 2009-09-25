@@ -42,7 +42,7 @@ static int
 parse_string_to_decodes_rsrc(char *input, int *vga_count, struct pci_slot_match *match)
 {
     char *tok;
-    char *input_sp, *count_sp, *pci_sp;
+    char *input_sp = NULL, *count_sp, *pci_sp;
     char tmp[32];
 
     tok = strtok_r(input,",",&input_sp);
