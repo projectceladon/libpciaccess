@@ -1,8 +1,2 @@
-.deps
-.libs
-*.lo
-*.o
-libpciaccess.la
-Makefile
-Makefile.in
+#		Add & Override for this directory and it's subdirectories
 scanpci
