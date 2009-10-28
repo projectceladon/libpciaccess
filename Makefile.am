@@ -31,9 +31,12 @@ pkgconfig_DATA = pciaccess.pc
 
 EXTRA_DIST = pciaccess.pc.in src/scanpci.c src/scanpci.man 
 
-.PHONY: ChangeLog
+.PHONY: ChangeLog INSTALL
+
+INSTALL:
+	$(INSTALL_CMD)
 
 ChangeLog:
 	$(CHANGELOG_CMD)
 
-dist-hook: ChangeLog
+dist-hook: ChangeLog INSTALL
