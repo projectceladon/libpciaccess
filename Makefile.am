@@ -29,6 +29,7 @@ SUBDIRS = src
 pkgconfigdir = $(libdir)/pkgconfig
 pkgconfig_DATA = pciaccess.pc
 
+MAINTAINERCLEANFILES = ChangeLog INSTALL
 EXTRA_DIST = pciaccess.pc.in src/scanpci.c src/scanpci.man 
 
 .PHONY: ChangeLog INSTALL
