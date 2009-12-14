@@ -114,6 +114,8 @@ pci_device_open_io(struct pci_device *dev, pciaddr_t base, pciaddr_t size)
 	    delete_io_handle(ret);
 	    return NULL;
 	}
+
+        return ret;
     }
 
     return NULL;
