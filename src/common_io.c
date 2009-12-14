@@ -28,13 +28,13 @@
 #include "pciaccess.h"
 #include "pciaccess_private.h"
 
-static struct pci_io_handle **ios;
+static struct pci_io_handle *ios;
 static unsigned int num_ios;
 
 static struct pci_io_handle *
 new_io_handle(void)
 {
-    struct pci_io_handle **new;
+    struct pci_io_handle *new;
 
     new = realloc(ios, sizeof(struct pci_io_handle) * (num_ios + 1));
     if (!new)
@@ -43,13 +43,13 @@ new_io_handle(void)
     ios = new;
     num_ios++;
 
-    return ios[num_ios - 1];
+    return ios + num_ios - 1;
 }
 
 static void
 delete_io_handle(struct pci_io_handle *handle)
 {
-    struct pci_io_handle **new;
+    struct pci_io_handle *new;
     int i = 0;
 
     if (!handle || !num_ios || (void *)handle < (void *)ios ||
@@ -57,7 +57,7 @@ delete_io_handle(struct pci_io_handle *handle)
         return;
 
     for (i = 0; i < num_ios; i++) {
-        if (ios[i] == handle) {
+        if (ios + i == handle) {
             memmove(&ios[i], &ios[i+1], sizeof(struct pci_io_handle) *
                                         (num_ios - i - 1));
             break;
