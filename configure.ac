@@ -22,7 +22,7 @@ dnl DEALINGS IN THE SOFTWARE.
 dnl
 dnl Process this file with autoconf to create configure.
 
-AC_PREREQ([2.57])
+AC_PREREQ([2.60])
 
 AC_INIT(libpciaccess, 0.11.0, [https://bugs.freedesktop.org/enter_bug.cgi?product=xorg&component=libpciaccess], libpciaccess)
 AM_INIT_AUTOMAKE([foreign dist-bzip2])
