@@ -259,7 +259,7 @@ pci_device_vgaarb_decodes(int new_vgaarb_rsrc)
     if (dev->vgaarb_rsrc == new_vgaarb_rsrc)
         return 0;
 
-    len = snprintf(buf, BUFSIZE, "decodes %s", rsrc_to_str(dev->vgaarb_rsrc));
+    len = snprintf(buf, BUFSIZE, "decodes %s", rsrc_to_str(new_vgaarb_rsrc));
     ret = vgaarb_write(pci_sys->vgaarb_fd, buf, len);
     if (ret == 0)
         dev->vgaarb_rsrc = new_vgaarb_rsrc;
