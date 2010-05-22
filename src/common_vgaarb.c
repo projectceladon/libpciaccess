@@ -263,6 +263,13 @@ pci_device_vgaarb_decodes(int new_vgaarb_rsrc)
     ret = vgaarb_write(pci_sys->vgaarb_fd, buf, len);
     if (ret == 0)
         dev->vgaarb_rsrc = new_vgaarb_rsrc;
+
+    ret = read(pci_sys->vgaarb_fd, buf, BUFSIZE);
+    if (ret <= 0)
+        return -1;
+
+    parse_string_to_decodes_rsrc(buf, &pci_sys->vga_count, NULL);
+
     return ret;
 }
 
