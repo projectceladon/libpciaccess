@@ -123,6 +123,7 @@ AC_SUBST(PCIACCESS_LIBS)
 		  
 
 AC_OUTPUT([Makefile
+	   man/Makefile
 	   src/Makefile
 	   scanpci/Makefile
            pciaccess.pc])

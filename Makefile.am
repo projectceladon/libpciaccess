@@ -25,13 +25,12 @@
 ACLOCAL_AMFLAGS = -I m4
 
 # Order: scanpci depends on libpciaccess built in src
-SUBDIRS = src scanpci
+SUBDIRS = man src scanpci
 
 pkgconfigdir = $(libdir)/pkgconfig
 pkgconfig_DATA = pciaccess.pc
 
 MAINTAINERCLEANFILES = ChangeLog INSTALL
-EXTRA_DIST = src/scanpci.man
 
 .PHONY: ChangeLog INSTALL
 
