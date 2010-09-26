@@ -21,6 +21,7 @@
 # FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
 # DEALINGS IN THE SOFTWARE.
 
+AM_CPPFLAGS = -I$(top_srcdir)/include
 AM_CFLAGS = $(CWARNFLAGS) @PCIACCESS_CFLAGS@
 
 lib_LTLIBRARIES = libpciaccess.la
@@ -66,8 +67,6 @@ libpciaccess_la_SOURCES = common_bridge.c \
 	pciaccess_private.h \
 	$(VGA_ARBITER) \
 	$(OS_SUPPORT)
-
-INCLUDES = -I$(top_srcdir)/include
 
 libpciaccess_la_LIBADD = $(PCIACCESS_LIBS)
 
