@@ -71,8 +71,3 @@ libpciaccess_la_SOURCES = common_bridge.c \
 libpciaccess_la_LIBADD = $(PCIACCESS_LIBS)
 
 libpciaccess_la_LDFLAGS = -version-number 0:10:8 -no-undefined
-
-libpciaccessincludedir = $(includedir)
-libpciaccessinclude_HEADERS = \
-    $(top_srcdir)/include/pciaccess.h
-

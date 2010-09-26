@@ -25,7 +25,7 @@
 ACLOCAL_AMFLAGS = -I m4
 
 # Order: scanpci depends on libpciaccess built in src
-SUBDIRS = man src scanpci
+SUBDIRS = include man src scanpci
 
 pkgconfigdir = $(libdir)/pkgconfig
 pkgconfig_DATA = pciaccess.pc
