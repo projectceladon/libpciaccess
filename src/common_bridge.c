@@ -270,10 +270,6 @@ pci_device_get_bridge_buses(struct pci_device * dev, int *primary_bus,
 	return ENODEV;
     }
 
-    if (!priv->bridge.pci) {
-	return ENODEV;
-    }
-
     switch ((dev->device_class >> 8) & 0x0ff) {
     case 0x00:
 	/* What to do for host bridges?  I'm pretty sure this isn't right.
