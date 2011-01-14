@@ -40,7 +40,6 @@ XORG_MACROS_VERSION(1.3)
 XORG_DEFAULT_OPTIONS
 
 # Check for progs
-AC_PROG_CC
 AC_PROG_LIBTOOL
 
 pciids_path=/usr/share/hwdata
