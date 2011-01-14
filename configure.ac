@@ -22,9 +22,14 @@ dnl DEALINGS IN THE SOFTWARE.
 dnl
 dnl Process this file with autoconf to create configure.
 
+# Initialize Autoconf
 AC_PREREQ([2.60])
+AC_INIT([libpciaccess],[0.12.0],
+        [https://bugs.freedesktop.org/enter_bug.cgi?product=xorg&component=libpciaccess],[libpciaccess])
+AC_CONFIG_SRCDIR([Makefile.am])
+AC_CONFIG_HEADERS([config.h])
 
-AC_INIT(libpciaccess, 0.12.0, [https://bugs.freedesktop.org/enter_bug.cgi?product=xorg&component=libpciaccess], libpciaccess)
+# Initialize Automake
 AM_INIT_AUTOMAKE([foreign dist-bzip2])
 AM_MAINTAINER_MODE
 
@@ -33,7 +38,6 @@ m4_ifndef([XORG_MACROS_VERSION],
           [m4_fatal([must install xorg-macros 1.3 or later before running autoconf/autogen])])
 XORG_MACROS_VERSION(1.3)
 XORG_DEFAULT_OPTIONS
-AM_CONFIG_HEADER(config.h)
 
 # Check for progs
 AC_PROG_CC
@@ -122,9 +126,10 @@ AC_SUBST(PCIACCESS_CFLAGS)
 AC_SUBST(PCIACCESS_LIBS)
 		  
 
-AC_OUTPUT([Makefile
+AC_CONFIG_FILES([Makefile
 	   include/Makefile
 	   man/Makefile
 	   src/Makefile
 	   scanpci/Makefile
            pciaccess.pc])
+AC_OUTPUT
