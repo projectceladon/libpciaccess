@@ -43,7 +43,7 @@ XORG_DEFAULT_OPTIONS
 AC_PROG_LIBTOOL
 
 pciids_path=/usr/share/hwdata
-AC_ARG_WITH(pciids-path, AC_HELP_STRING([--with-pciids-path=PCIIDS_PATH],
+AC_ARG_WITH(pciids-path, AS_HELP_STRING([--with-pciids-path=PCIIDS_PATH],
 	[Path to pci.ids file]), [pciids_path="$withval"])
 AX_DEFINE_DIR(PCIIDS_PATH, pciids_path, [Path to pci.ids])
 
@@ -56,7 +56,7 @@ if test "x$LINUX_ROM" = xyes; then
 fi
 
 use_zlib=no
-AC_ARG_WITH(zlib, AC_HELP_STRING([--with-zlib],
+AC_ARG_WITH(zlib, AS_HELP_STRING([--with-zlib],
 	[Enable zlib support to read gzip compressed pci.ids]),
 	[use_zlib="$withval"])
 if test "x$use_zlib" = xyes; then
