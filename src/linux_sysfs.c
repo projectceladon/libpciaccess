@@ -840,6 +840,55 @@ pci_device_linux_sysfs_write8(struct pci_io_handle *handle, uint32_t port,
     pwrite(handle->fd, &data, 1, port + handle->base);
 }
 
+static int
+pci_device_linux_sysfs_map_legacy(struct pci_device *dev, pciaddr_t base,
+				  pciaddr_t size, unsigned map_flags, void **addr)
+{
+    char name[PATH_MAX];
+    int flags = O_RDONLY;
+    int prot = PROT_READ;
+    int fd;
+    int ret=0;
+
+    if (map_flags & PCI_DEV_MAP_FLAG_WRITABLE) {
+	flags |= O_WRONLY;
+	prot |= PROT_WRITE;
+    }
+
+    /* First check if there's a legacy memory method for the device */
+    while (dev) {
+	snprintf(name, PATH_MAX, "/sys/class/pci_bus/%04x:%02x/legacy_mem",
+		 dev->domain, dev->bus);
+
+	fd = open(name, flags);
+	if (fd >= 0)
+	    break;
+
+	dev = pci_device_get_parent_bridge(dev);
+    }
+
+    /* If not, /dev/mem is the best we can do */
+    if (!dev)
+	fd = open("/dev/mem", flags);
+
+    if (fd < 0)
+	return errno;
+
+    *addr = mmap(NULL, size, prot, MAP_SHARED, fd, base);
+    if (*addr == MAP_FAILED) {
+	ret = errno;
+    }
+
+    close(fd);
+    return ret;
+}
+
+static int
+pci_device_linux_sysfs_unmap_legacy(struct pci_device *dev, void *addr, pciaddr_t size)
+{
+    return munmap(addr, size);
+}
+
 static const struct pci_system_methods linux_sysfs_methods = {
     .destroy = NULL,
     .destroy_device = NULL,
@@ -865,4 +914,7 @@ static const struct pci_system_methods linux_sysfs_methods = {
     .write32 = pci_device_linux_sysfs_write32,
     .write16 = pci_device_linux_sysfs_write16,
     .write8 = pci_device_linux_sysfs_write8,
+
+    .map_legacy = pci_device_linux_sysfs_map_legacy,
+    .unmap_legacy = pci_device_linux_sysfs_unmap_legacy,
 };
