@@ -526,4 +526,12 @@ void pci_io_write32(struct pci_io_handle *handle, uint32_t reg, uint32_t data);
 void pci_io_write16(struct pci_io_handle *handle, uint32_t reg, uint16_t data);
 void pci_io_write8(struct pci_io_handle *handle, uint32_t reg, uint8_t data);
 
+/*
+ * Legacy memory access
+ */
+
+int pci_device_map_legacy(struct pci_device *dev, pciaddr_t base,
+			  pciaddr_t size, unsigned map_flags, void **addr);
+int pci_device_unmap_legacy(struct pci_device *dev, void *addr, pciaddr_t size);
+
 #endif /* PCIACCESS_H */

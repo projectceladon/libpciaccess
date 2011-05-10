@@ -654,3 +654,47 @@ pci_device_enable(struct pci_device *dev)
     if (pci_sys->methods->enable)
 	pci_sys->methods->enable(dev);
 }
+
+/**
+ * Map the legacy memory space for the PCI domain containing \c dev.
+ *
+ * \param dev          Device whose memory region is to be mapped.
+ * \param base         Base address of the range to be mapped.
+ * \param size         Size of the range to be mapped.
+ * \param map_flags    Flag bits controlling how the mapping is accessed.
+ * \param addr         Location to store the mapped address.
+ *
+ * \returns
+ * Zero on success or an \c errno value on failure.
+ */
+int
+pci_device_map_legacy(struct pci_device *dev, pciaddr_t base, pciaddr_t size,
+		      unsigned map_flags, void **addr)
+{
+    if (base > 0x100000 || base + size > 0x100000)
+	return EINVAL;
+
+    if (!pci_sys->methods->map_legacy)
+	return ENOSYS;
+
+    return pci_sys->methods->map_legacy(dev, base, size, map_flags, addr);
+}
+
+/**
+ * Unmap the legacy memory space for the PCI domain containing \c dev.
+ *
+ * \param dev          Device whose memory region is to be unmapped.
+ * \param addr         Location of the mapped address.
+ * \param size         Size of the range to be unmapped.
+ *
+ * \returns
+ * Zero on success or an \c errno value on failure.
+ */
+int
+pci_device_unmap_legacy(struct pci_device *dev, void *addr, pciaddr_t size)
+{
+    if (!pci_sys->methods->unmap_legacy)
+	return ENOSYS;
+
+    return pci_sys->methods->unmap_legacy(dev, addr, size);
+}

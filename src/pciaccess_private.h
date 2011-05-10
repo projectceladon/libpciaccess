@@ -77,6 +77,10 @@ struct pci_system_methods {
     void (*write16)( struct pci_io_handle *handle, uint32_t reg,
 		     uint16_t data );
     void (*write8)( struct pci_io_handle *handle, uint32_t reg, uint8_t data );
+
+    int (*map_legacy)(struct pci_device *dev, pciaddr_t base, pciaddr_t size,
+		      unsigned map_flags, void **addr);
+    int (*unmap_legacy)(struct pci_device *dev, void *addr, pciaddr_t size);
 };
 
 struct pci_device_mapping {
