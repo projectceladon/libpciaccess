@@ -387,7 +387,9 @@ pci_device_linux_sysfs_read( struct pci_device * dev, void * data,
 	/* If zero bytes were read, then we assume it's the end of the
 	 * config file.
 	 */
-	if ( bytes <= 0 ) {
+	if (bytes == 0)
+	    break;
+	if ( bytes < 0 ) {
 	    err = errno;
 	    break;
 	}
@@ -445,7 +447,9 @@ pci_device_linux_sysfs_write( struct pci_device * dev, const void * data,
 	/* If zero bytes were written, then we assume it's the end of the
 	 * config file.
 	 */
-	if ( bytes <= 0 ) {
+	if ( bytes == 0 )
+	    break;
+	if ( bytes < 0 ) {
 	    err = errno;
 	    break;
 	}
