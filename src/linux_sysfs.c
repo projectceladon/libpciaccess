@@ -122,7 +122,7 @@ scan_sys_pci_filter( const struct dirent * d )
 int
 populate_entries( struct pci_system * p )
 {
-    struct dirent ** devices;
+    struct dirent ** devices = NULL;
     int n;
     int i;
     int err = 0;
