@@ -79,7 +79,7 @@ pci_system_linux_sysfs_create( void )
     /* If the directory "/sys/bus/pci/devices" exists, then the PCI subsystem
      * can be accessed using this interface.
      */
-    
+
     if ( stat( SYS_BUS_PCI, & st ) == 0 ) {
 	pci_sys = calloc( 1, sizeof( struct pci_system ) );
 	if ( pci_sys != NULL ) {
@@ -114,7 +114,7 @@ pci_system_linux_sysfs_create( void )
 static int
 scan_sys_pci_filter( const struct dirent * d )
 {
-    return !((strcmp( d->d_name, "." ) == 0) 
+    return !((strcmp( d->d_name, "." ) == 0)
 	     || (strcmp( d->d_name, ".." ) == 0));
 }
 
@@ -219,7 +219,7 @@ pci_device_linux_sysfs_probe( struct pci_device * dev )
 	 * parsing issues and non-root users can write to PCI config
 	 * registers, we use a different file in the device's sysfs
 	 * directory called "resource".
-	 * 
+	 *
 	 * The resource file contains all of the needed information in
 	 * a format that is consistent across all platforms.  Each BAR
 	 * and the expansion ROM have a single line of data containing
@@ -251,9 +251,9 @@ pci_device_linux_sysfs_probe( struct pci_device * dev )
 		dev->regions[i].base_addr = strtoull( next, & next, 16 );
 		high_addr = strtoull( next, & next, 16 );
 		flags = strtoull( next, & next, 16 );
-		    
+
 		if ( dev->regions[i].base_addr != 0 ) {
-		    dev->regions[i].size = (high_addr 
+		    dev->regions[i].size = (high_addr
 					    - dev->regions[i].base_addr) + 1;
 
 		    dev->regions[i].is_IO = (flags & 0x01);
@@ -293,7 +293,7 @@ pci_device_linux_sysfs_read_rom( struct pci_device * dev, void * buffer )
 	      dev->bus,
 	      dev->dev,
 	      dev->func );
-    
+
     fd = open( name, O_RDWR );
     if ( fd == -1 ) {
 #ifdef LINUX_ROM
@@ -338,7 +338,7 @@ pci_device_linux_sysfs_read_rom( struct pci_device * dev, void * buffer )
 
 	total_bytes += bytes;
     }
-	
+
 
     lseek( fd, 0, SEEK_SET );
     write( fd, "0", 1 );
@@ -398,7 +398,7 @@ pci_device_linux_sysfs_read( struct pci_device * dev, void * data,
 	offset += bytes;
 	data_bytes += bytes;
     }
-    
+
     if ( bytes_read != NULL ) {
 	*bytes_read = size - temp_size;
     }
@@ -458,7 +458,7 @@ pci_device_linux_sysfs_write( struct pci_device * dev, const void * data,
 	offset += bytes;
 	data_bytes += bytes;
     }
-    
+
     if ( bytes_written != NULL ) {
 	*bytes_written = size - temp_size;
     }
@@ -473,9 +473,9 @@ pci_device_linux_sysfs_map_range_wc(struct pci_device *dev,
 {
     char name[256];
     int fd;
-    const int prot = ((map->flags & PCI_DEV_MAP_FLAG_WRITABLE) != 0) 
+    const int prot = ((map->flags & PCI_DEV_MAP_FLAG_WRITABLE) != 0)
         ? (PROT_READ | PROT_WRITE) : PROT_READ;
-    const int open_flags = ((map->flags & PCI_DEV_MAP_FLAG_WRITABLE) != 0) 
+    const int open_flags = ((map->flags & PCI_DEV_MAP_FLAG_WRITABLE) != 0)
         ? O_RDWR : O_RDONLY;
     const off_t offset = map->base - dev->regions[map->region].base_addr;
 
@@ -504,10 +504,10 @@ pci_device_linux_sysfs_map_range_wc(struct pci_device *dev,
 
 /**
  * Map a memory region for a device using the Linux sysfs interface.
- * 
+ *
  * \param dev   Device whose memory region is to be mapped.
  * \param map   Parameters of the mapping that is to be created.
- * 
+ *
  * \return
  * Zero on success or an \c errno value on failure.
  *
@@ -525,9 +525,9 @@ pci_device_linux_sysfs_map_range(struct pci_device *dev,
     char name[256];
     int fd;
     int err = 0;
-    const int prot = ((map->flags & PCI_DEV_MAP_FLAG_WRITABLE) != 0) 
+    const int prot = ((map->flags & PCI_DEV_MAP_FLAG_WRITABLE) != 0)
         ? (PROT_READ | PROT_WRITE) : PROT_READ;
-    const int open_flags = ((map->flags & PCI_DEV_MAP_FLAG_WRITABLE) != 0) 
+    const int open_flags = ((map->flags & PCI_DEV_MAP_FLAG_WRITABLE) != 0)
         ? O_RDWR : O_RDONLY;
     const off_t offset = map->base - dev->regions[map->region].base_addr;
 #ifdef HAVE_MTRR
@@ -608,10 +608,10 @@ pci_device_linux_sysfs_map_range(struct pci_device *dev,
 
 /**
  * Unmap a memory region for a device using the Linux sysfs interface.
- * 
+ *
  * \param dev   Device whose memory region is to be unmapped.
  * \param map   Parameters of the mapping that is to be destroyed.
- * 
+ *
  * \return
  * Zero on success or an \c errno value on failure.
  *
@@ -638,7 +638,7 @@ pci_device_linux_sysfs_unmap_range(struct pci_device *dev,
     err = pci_device_generic_unmap_range (dev, map);
     if (err)
 	return err;
-    
+
 #ifdef HAVE_MTRR
     if ((map->flags & PCI_DEV_MAP_FLAG_CACHABLE) != 0) {
         sentry.type = MTRR_TYPE_WRBACK;
@@ -673,7 +673,7 @@ static void pci_device_linux_sysfs_enable(struct pci_device *dev)
 	      dev->bus,
 	      dev->dev,
 	      dev->func );
-    
+
     fd = open( name, O_RDWR );
     if (fd == -1)
        return;
@@ -695,7 +695,7 @@ static int pci_device_linux_sysfs_boot_vga(struct pci_device *dev)
 	      dev->bus,
 	      dev->dev,
 	      dev->func );
-    
+
     fd = open( name, O_RDONLY );
     if (fd == -1)
        return 0;
@@ -722,7 +722,7 @@ static int pci_device_linux_sysfs_has_kernel_driver(struct pci_device *dev)
 	      dev->bus,
 	      dev->dev,
 	      dev->func );
-    
+
     ret = stat(name, &dummy);
     if (ret < 0)
 	return 0;

@@ -109,7 +109,7 @@ pci_device_open_io(struct pci_device *dev, pciaddr_t base, pciaddr_t size)
 	ret = new_io_handle();
 	if (!ret)
 	    return NULL;
-	
+
 	if (!pci_sys->methods->open_device_io(ret, dev, bar, base, size)) {
 	    delete_io_handle(ret);
 	    return NULL;

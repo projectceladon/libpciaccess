@@ -50,7 +50,7 @@
 
 /**
  * \file pciaccess.h
- * 
+ *
  * \author Ian Romanick <idr@us.ibm.com>
  */
 
@@ -62,7 +62,7 @@
 #if __GNUC__ >= 3
 #define __deprecated __attribute__((deprecated))
 #else
-#define __deprecated 
+#define __deprecated
 #endif
 
 typedef uint64_t pciaddr_t;
@@ -193,7 +193,7 @@ int pci_device_cfg_write_bits(struct pci_device *dev, uint32_t mask,
 struct pci_id_match {
     /**
      * \name Device / vendor matching controls
-     * 
+     *
      * Control the search based on the device, vendor, subdevice, or subvendor
      * IDs.  Setting any of these fields to \c PCI_MATCH_ANY will cause the
      * field to not be used in the comparison.
@@ -208,7 +208,7 @@ struct pci_id_match {
 
     /**
      * \name Device class matching controls
-     * 
+     *
      */
     /*@{*/
     uint32_t    device_class;
@@ -261,7 +261,7 @@ struct pci_mem_region {
      * This address is really only useful to other devices in the same
      * domain.  It's probably \b not the address applications will ever
      * use.
-     * 
+     *
      * \warning
      * Most (all?) platform back-ends leave this field unset.
      */
@@ -270,7 +270,7 @@ struct pci_mem_region {
 
     /**
      * Base physical address of the region from the CPU's point of view.
-     * 
+     *
      * This address is typically passed to \c pci_device_map_range to create
      * a mapping of the region to the CPU's virtual address space.
      */
@@ -468,7 +468,7 @@ struct pci_pcmcia_bridge_info {
     uint8_t    card_bus;
     uint8_t    subordinate_bus;
     uint8_t    cardbus_latency_timer;
-    
+
     uint16_t    secondary_status;
     uint16_t    bridge_control;
 

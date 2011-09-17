@@ -122,7 +122,7 @@ AC_CHECK_MEMBER([struct pci_io.pi_sel.pc_domain],
 
 AC_SUBST(PCIACCESS_CFLAGS)
 AC_SUBST(PCIACCESS_LIBS)
-		  
+
 AC_CONFIG_FILES([Makefile
 		include/Makefile
 		man/Makefile
