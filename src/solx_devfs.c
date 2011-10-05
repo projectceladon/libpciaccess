@@ -454,8 +454,9 @@ probe_dev(nexus_t *nexus, pcitool_reg_t *prg_p, probe_info_t *pinfo)
 			new_num_elems * sizeof (struct pci_device_private));
 		if (new_devs == NULL) {
 		    (void) fprintf(stderr,
-			           "Maximum number of PCI devices found,"
-			           " discarding additional devices\n");
+			           "Error allocating memory for PCI devices:"
+				   " %s\n discarding additional devices\n",
+				   strerror(errno));
 		    return (rval);
 		}
 		(void) memset(&new_devs[pinfo->num_devices], 0,
