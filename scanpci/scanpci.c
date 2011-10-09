@@ -22,10 +22,28 @@
  * DEALINGS IN THE SOFTWARE.
  */
 
+#ifdef HAVE_CONFIG_H
+#include "config.h"
+#endif
+
 #include <stdlib.h>
 #include <stdio.h>
-#include <err.h>
 #include <unistd.h>
+
+#ifdef HAVE_ERR_H
+#include <err.h>
+#else
+# include <errno.h>
+# include <string.h>
+# define err(exitcode, format, args...) \
+   errx(exitcode, format ": %s", ## args, strerror(errno))
+# define errx(exitcode, format, args...) \
+   { warnx(format, ## args); exit(exitcode); }
+# define warn(format, args...) \
+   warnx(format ": %s", ## args, strerror(errno))
+# define warnx(format, args...) \
+   fprintf(stderr, format "\n", ## args)
+#endif
 
 #include "pciaccess.h"
 

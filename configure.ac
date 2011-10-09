@@ -106,6 +106,8 @@ AM_CONDITIONAL(GNU, [test "x$gnu" = xyes])
 
 AC_SYS_LARGEFILE
 
+AC_CHECK_HEADERS([err.h])
+
 AC_CHECK_HEADER([asm/mtrr.h], [have_mtrr_h="yes"], [have_mtrr_h="no"])
 
 if test "x$have_mtrr_h" = xyes; then
