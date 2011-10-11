@@ -851,7 +851,7 @@ pci_device_linux_sysfs_map_legacy(struct pci_device *dev, pciaddr_t base,
     int ret=0;
 
     if (map_flags & PCI_DEV_MAP_FLAG_WRITABLE) {
-	flags |= O_WRONLY;
+	flags = O_RDWR; /* O_RDWR != O_WRONLY | O_RDONLY */;
 	prot |= PROT_WRITE;
     }
 
