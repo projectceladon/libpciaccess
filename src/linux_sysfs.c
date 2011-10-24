@@ -889,8 +889,18 @@ pci_device_linux_sysfs_unmap_legacy(struct pci_device *dev, void *addr, pciaddr_
     return munmap(addr, size);
 }
 
+
+static void
+pci_system_linux_destroy(void)
+{
+#ifdef HAVE_MTRR
+	if (pci_sys->mtrr_fd != -1)
+		close(pci_sys->mtrr_fd);
+#endif
+}
+
 static const struct pci_system_methods linux_sysfs_methods = {
-    .destroy = NULL,
+    .destroy = pci_system_linux_destroy,
     .destroy_device = NULL,
     .read_rom = pci_device_linux_sysfs_read_rom,
     .probe = pci_device_linux_sysfs_probe,
