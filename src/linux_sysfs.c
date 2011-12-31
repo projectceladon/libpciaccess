@@ -44,7 +44,9 @@
 #include <dirent.h>
 #include <errno.h>
 
+#ifndef ANDROID
 #include "config.h"
+#endif
 
 #ifdef HAVE_MTRR
 #include <asm/mtrr.h>
