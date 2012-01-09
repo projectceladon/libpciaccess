@@ -33,7 +33,10 @@
 #include <stdlib.h>
 #include <limits.h>
 
+#ifndef ANDROID
 #include "config.h"
+#endif
+
 #include "pciaccess.h"
 #include "pciaccess_private.h"
 

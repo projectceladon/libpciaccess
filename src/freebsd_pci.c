@@ -43,7 +43,10 @@
 #include <sys/mman.h>
 #include <sys/memrange.h>
 
+#ifndef ANDROID
 #include "config.h"
+#endif
+
 #include "pciaccess.h"
 #include "pciaccess_private.h"
 
