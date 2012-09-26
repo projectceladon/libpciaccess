@@ -21,14 +21,8 @@
 # DEALINGS IN THE SOFTWARE.
 #
 
-LIBPCIACCESS_VALID_GPU_DRIVERS := i915 i965
-
-# Skip the makefile if we're not building for a known GPU.
-ifneq ($(filter $(BOARD_GPU_DRIVERS), $(LIBPCIACCESS_VALID_GPU_DRIVERS)),)
-
-# Validate needed variables.
 ifndef BOARD_LIBPCIACCESS_HWDATA
-    $(error BOARD_LIBPCIACCESS_HWDATA is undefined)
+    BOARD_LIBPCIACCESS_HWDATA := external/hwids
 endif
 
 LOCAL_PATH := $(call my-dir)
@@ -62,4 +56,3 @@ LOCAL_SRC_FILES := \
 
 include $(BUILD_SHARED_LIBRARY)
 
-endif # BOARD_GPU_DRIVERS
