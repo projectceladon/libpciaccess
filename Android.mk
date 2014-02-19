@@ -55,5 +55,7 @@ LOCAL_SRC_FILES := \
 	src/linux_devmem.c \
 	src/linux_sysfs.c
 
+LOCAL_EXPORT_C_INCLUDE_DIRS += $(LOCAL_PATH)/include
+
 include $(BUILD_SHARED_LIBRARY)
 
