@@ -40,6 +40,7 @@ LOCAL_CFLAGS := \
     -Dlinux \
     -DPCIIDS_PATH=\"$(BOARD_LIBPCIACCESS_HWDATA)\"
 
+LOCAL_CFLAGS += -Wno-error
 LOCAL_C_INCLUDES := \
 	$(LOCAL_PATH)/include
 
